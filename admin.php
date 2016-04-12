@@ -40,6 +40,50 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
     }
 
     /**
+     * @param string[] $pages      List of pages to copy/update in the animals
+     * @param string[] $animals    List of animals to update
+     * @param          $farmHelper
+     */
+    protected function updatePages($pages, $animals, $farmHelper) {
+        $allAnimals = $farmHelper->getAllAnimals();
+        foreach ($animals as $animal) {
+            if (empty($allAnimals[$animal])) {continue;} // FIXME: Show an error here
+            $pagesDir = $allAnimals[$animal]->getDataDir() . 'pages/';
+            foreach ($pages as $page) {
+                if (substr($page,-1) == '*') {
+                    // clobbing for namespace
+                } else {
+                    if (!page_exists($page)) {continue;}  // FIXME: Show an error here
+                    updatePage($page, $pagesDir);
+                }
+            }
+        }
+    }
+
+    protected function updatePage($page, $pagesDir) {
+        global $conf;
+        $parts = explode($conf['useslash'] ? '/' : ':',$page); // FIXME handle case of page ending in colon
+        $remoteFN = $pagesDir . join('/',$parts) . "txt";
+        if (!file_exists($remoteFN)) {
+            copy(wikiFN($page), $remoteFN);
+            touch($remoteFN,filemtime(wikiFN($page)));
+            return;
+        }
+        $remoteModTime = filemtime($remoteFN);
+        if ($remoteModTime == filemtime(wikiFN($page))) return;
+        $changelog = new PageChangelog($page);
+        if ($remoteModTime < filemtime(wikiFN($page)) &&
+            $changelog->getRevisionInfo($remoteModTime) &&
+            io_readFile($conf['savedir'].'/attic/'.join('/',$parts).'.'.$remoteModTime.'.txt.gz') == file_get_contents($remoteFN)
+        ) {
+            copy(wikiFN($page), $remoteFN);
+            touch($remoteFN,filemtime(wikiFN($page)));
+            return;
+        }
+        // We have to merge
+    }
+
+    /**
      * Render HTML output, e.g. helpful text and a form
      */
     public function html() {
@@ -66,6 +110,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
      * @return array
      */
     public function getAllAnimals() {
+        // FIXME: replace by call to helper function of farmer plugin
         $animals = array();
 
         $dir = dir(DOKU_FARMDIR);
