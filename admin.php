@@ -9,13 +9,15 @@
 // must be run within Dokuwiki
 if(!defined('DOKU_INC')) die();
 
+use dokuwiki\Form\Form;
+
 class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
 
     /**
      * @return int sort number in admin menu
      */
     public function getMenuSort() {
-        return FIXME;
+        return 43; // One behind the Farmer Entry
     }
 
     /**
@@ -29,13 +31,55 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
      * Should carry out any processing required by the plugin.
      */
     public function handle() {
+        global $INPUT;
+        dbglog($INPUT);
+        $animals = $INPUT->arr('farmsync-animals');
+        $options = $INPUT->arr('farmsync');
+        $pages = explode("\n",$options['pages']);
+        $media = explode("\n",$options['media']);
     }
 
     /**
      * Render HTML output, e.g. helpful text and a form
      */
     public function html() {
-        ptln('<h1>'.$this->getLang('menu').'</h1>');
+        echo '<h1>'.$this->getLang('menu').'</h1>';
+        $form = new Form();
+        $form->addTextarea('farmsync[pages]',$this->getLang('label:PageEntry'));
+        $form->addHTML("<br>");
+        $form->addTextarea('farmsync[media]',$this->getLang('label:MediaEntry'));
+        $form->addHTML("<h2>".$this->getLang('heading:animals')."</h2>");
+        $animals = $this->getAllAnimals();
+        foreach ($animals as $animal) {
+            $form->addCheckbox('farmsync-animals['.$animal . ']', $animal);
+        }
+        $form->addButton('submit','Submit');
+
+        echo $form->toHTML();
+    }
+
+    /**
+     *
+     *
+     * Get all animals from the DOKU_FARMDIR
+     *
+     * @return array
+     */
+    public function getAllAnimals() {
+        $animals = array();
+
+        $dir = dir(DOKU_FARMDIR);
+        while (false !== ($entry = $dir->read())) {
+            if ($entry == '.' || $entry == '..' || $entry == '_animal' || $entry == '.htaccess') {
+                continue;
+            }
+            if (!is_dir(DOKU_FARMDIR . $entry)) {
+                continue;
+            }
+            $animals[] = $entry;
+        }
+        $dir->close();
+        return $animals;
     }
 }
 
