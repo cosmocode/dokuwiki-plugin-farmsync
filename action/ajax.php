@@ -45,14 +45,22 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
             echo $json->encode("");
             return;
         }
-        // fixme: get pages dir via farmer helper
-        $remoteFN = DOKU_FARMDIR . $animal . '/data/pages/' . join('/',explode(':',$page)) . '.txt';
         $localModTime = filemtime(wikiFN($page));
-        io_saveFile($remoteFN,io_readFile(wikiFN($page)));
-        touch($remoteFN,$localModTime);
-        header('Content-Type: application/json');
-        http_status(200);
-        $json = new JSON;
-        echo $json->encode("");
+        $remoteFN = DOKU_FARMDIR . $animal . '/data/pages/' . join('/', explode(':', $page)) . '.txt';
+        // fixme: get data dir via farmer helper
+        if (!$INPUT->has('farmsync-content')) {
+            io_saveFile($remoteFN, io_readFile(wikiFN($page)));
+            touch($remoteFN, $localModTime);
+            header('Content-Type: application/json');
+            http_status(200);
+            $json = new JSON;
+            echo $json->encode("");
+        }
+
+        $content = $INPUT->str('farmsunc-content');
+        $remoteArchiveFileName = DOKU_FARMDIR . $animal . '/data/attic/' . join('/', explode(':', $page)) . '.' . $localModTime . '.txt.gz';
+        dbglog($remoteArchiveFileName);
+        io_saveFile($remoteArchiveFileName, io_readFile(wikiFN($page))); // FIXME: What happens if the archive file already exists?
+        io_saveFile($remoteFN, $content); // FIXME: Do we have to trigger the creation of an archive file? Should we trigger page write events? For what user?
     }
 }

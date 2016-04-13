@@ -316,9 +316,10 @@ class updateResultMergeConflict extends updateResults {
         $form->addButton("theirs","Keep theirs");
         $form->addButton("override","Overwrite theirs");
         $form->addButton("edit","Edit");
-        $textarea = $form->addTextarea('farmsync[mergeText]');
-        $textarea->val($this->getFinalText())->attr("style","display:none;");
-        $form->addButton("submit","save")->attr("style","display:none;");
+        $form->addTextarea('editarea')->val($this->getFinalText())->attr("style","display:none;");
+        $form->addTextarea('backup')->val($this->getFinalText())->attr("style","display:none;");
+        $form->addButton("save","save")->attr("style","display:none;");
+        $form->addButton("cancel","cancel")->attr("style","display:none;");
         $result .= $form->toHTML();
         return $result;
     }
