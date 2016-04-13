@@ -52,14 +52,18 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
         // $allAnimals = $farmHelper->getAllAnimals();
         foreach ($animals as $animal) {
             // if (empty($allAnimals[$animal])) {continue;} // FIXME: Show an error here
-            // $pagesDir = $allAnimals[$animal]->getDataDir() . 'pages/';
-            $pagesDir = DOKU_FARMDIR . $animal . '/data/pages/';
+            // $dataDir = $allAnimals[$animal]->getDataDir();
+            $dataDir = DOKU_FARMDIR . $animal . '/data/';
             foreach ($pages as $page) {
+                if (trim($page) == '') continue;
                 if (substr($page,-1) == '*') {
                     // clobbing for namespace
                 } else {
-                    if (!page_exists($page)) {continue;}  // FIXME: Show an error here
-                    $result = $this->updatePage($page, $pagesDir);
+                    if (!page_exists($page)) {
+                        msg("Page $page does not exist in source wiki!",-1);
+                        continue;
+                    }
+                    $result = $this->updatePage($page, $dataDir);
                     $result->setAnimal($animal);
                     $this->updated_pages[] = $result;
                 }
@@ -69,14 +73,14 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
 
     /**
      * @param $page
-     * @param $pagesDir
-     * @return mergeResults
+     * @param $remoteDataDir
+     * @return updateResults
      */
-    protected function updatePage($page, $pagesDir) {
+    protected function updatePage($page, $remoteDataDir) {
         global $conf;
-        $result = new mergeResults($page);
+        $result = new updateResults($page);
         $parts = explode($conf['useslash'] ? '/' : ':',$page); // FIXME handle case of page ending in colon
-        $remoteFN = $pagesDir . join('/',$parts) . ".txt";
+        $remoteFN = $remoteDataDir . 'pages/' . join('/',$parts) . ".txt";
         $localModTime = filemtime(wikiFN($page));
         if (!file_exists($remoteFN)) {
             io_saveFile($remoteFN,io_readFile(wikiFN($page)));
@@ -87,12 +91,11 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
         $remoteModTime = filemtime($remoteFN);
         if ($remoteModTime == $localModTime) {
             $result->setMergeResult(new MergeResult(MergeResult::unchanged));
-            dbglog('$remoteModTime == $localModTime');
             return $result;
         };
 
         $changelog = new PageChangelog($page);
-        $localArchiveText = io_readFile($conf['savedir'].'/attic/'.join('/',$parts).'.'.$remoteModTime.'.txt.gz');
+        $localArchiveText = io_readFile(DOKU_INC . $conf['savedir'].'/attic/'.join('/',$parts).'.'.$remoteModTime.'.txt.gz');
         if ($remoteModTime < $localModTime &&
             $changelog->getRevisionInfo($remoteModTime) &&
             $localArchiveText == io_readFile($remoteFN)
@@ -104,7 +107,8 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
         }
 
         // We have to merge
-        $diff3 = new \Diff3("",
+        $commonroot = $this->findCommonAncestor($page, $remoteDataDir);
+        $diff3 = new \Diff3(explode("\n",$commonroot),
             explode("\n",io_readFile($remoteFN)),
             explode("\n",io_readFile(wikiFN($page)))
         );
@@ -115,6 +119,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             $result->setMergeResult(new MergeResult(MergeResult::mergedWithoutConflicts));
             return $result;
         }
+        $result = new updateResultMergeConflict($page);
         $result->setMergeResult(new MergeResult(MergeResult::mergedWithConflicts));
         $result->setConflictingBlocks($diff3->_conflictingBlocks);
         $result->setFinalText($final);
@@ -143,10 +148,10 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             return;
         }
         echo "<ul>";
-        /** @var mergeResults $result */
+        /** @var updateResults $result */
         foreach ($this->updated_pages as $result) {
             echo "<li>";
-            echo $result->getAnimal() . " " . $result->getPage() . " " . $result->getMergeResult();
+            echo $result->getResultLine();
             echo "</li>";
         }
         echo "</ul>";
@@ -176,15 +181,44 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
         $dir->close();
         return $animals;
     }
+
+    private function findCommonAncestor($page, $remoteDataDir)
+    {
+        global $conf;
+        $parts = explode(':',$page);
+        $pageid = array_pop($parts);
+        $atticdir = $remoteDataDir . 'attic/' . join('/', $parts);
+        $atticdir = rtrim($atticdir,'/') . '/';
+        $dir = dir($atticdir);
+        $oldrevisions = array();
+        while (false !== ($entry = $dir->read())) {
+            if ($entry == '.' || $entry == '..' || is_dir($atticdir . $entry)) {
+                continue;
+            }
+            list($atticpageid, $timestamp,) = explode('.',$entry);
+            if ($atticpageid == $pageid) $oldrevisions[] = $timestamp;
+        }
+        rsort($oldrevisions);
+        $changelog = new PageChangelog($page);
+        // for($i=0; $i<count($oldrevisions); $i +=1){
+        foreach ($oldrevisions as $rev) {
+            if (!$changelog->getRevisionInfo($rev)) continue;
+            $localArchiveText = io_readFile(DOKU_INC . $conf['savedir'].'/attic/'.join('/',$parts). $pageid . '.'.$rev.'.txt.gz');
+            $remoteArchiveText = io_readFile($atticdir . $pageid . '.' . $rev . '.txt.gz');
+            if ($localArchiveText == $remoteArchiveText) {
+                return $localArchiveText;
+            }
+        }
+        return "";
+    }
 }
 
 /*
  * @access private
  */
-class mergeResults {
+class updateResults {
 
     private $_finalText = "";
-    private $_conflictingBlocks = 0;
     private $_mergeResult;
     private $_animal;
     private $_page;
@@ -206,22 +240,6 @@ class mergeResults {
     }
 
     /**
-     * @return int
-     */
-    public function getConflictingBlocks()
-    {
-        return $this->_conflictingBlocks;
-    }
-
-    /**
-     * @param int $conflictingBlocks
-     */
-    public function setConflictingBlocks($conflictingBlocks)
-    {
-        $this->_conflictingBlocks = $conflictingBlocks;
-    }
-
-    /**
      * @return MergeResult
      */
     public function getMergeResult()
@@ -237,7 +255,10 @@ class mergeResults {
         $this->_mergeResult = $mergeResult;
     }
 
-
+    public function getResultLine()
+    {
+        return $this->getAnimal() . " " . $this->getPage() . " " . $this->getMergeResult();
+    }
 
     /**
      * @return string
@@ -265,6 +286,41 @@ class mergeResults {
 
     function __construct($page) {
         $this->_page = $page;
+    }
+}
+
+class updateResultMergeConflict extends updateResults {
+
+    private $_conflictingBlocks;
+    /**
+     * @return int
+     */
+    public function getConflictingBlocks()
+    {
+        return $this->_conflictingBlocks;
+    }
+
+    /**
+     * @param int $conflictingBlocks
+     */
+    public function setConflictingBlocks($conflictingBlocks)
+    {
+        $this->_conflictingBlocks = $conflictingBlocks;
+    }
+
+    public function getResultLine()
+    {
+        $result = $this->getAnimal() . " " . $this->getPage() . " Conflict: ";
+        $form = new Form();
+        $form->attr('data-animal', $this->getAnimal())->attr("data-page",$this->getPage());
+        $form->addButton("theirs","Keep theirs");
+        $form->addButton("override","Overwrite theirs");
+        $form->addButton("edit","Edit");
+        $textarea = $form->addTextarea('farmsync[mergeText]');
+        $textarea->val($this->getFinalText())->attr("style","display:none;");
+        $form->addButton("submit","save")->attr("style","display:none;");
+        $result .= $form->toHTML();
+        return $result;
     }
 }
 
