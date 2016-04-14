@@ -1,11 +1,12 @@
 <?php
+namespace plugin\struct\test;
 /**
- * General tests for the farmsync plugin
+ * General tests for the skilltagicon plugin
  *
  * @group plugin_farmsync
  * @group plugins
  */
-class general_plugin_farmsync_test extends DokuWikiTest {
+class general_plugin_farmsync_test extends \DokuWikiTest {
 
     /**
      * Simple test to make sure the plugin.info.txt is in correct format
@@ -29,5 +30,25 @@ class general_plugin_farmsync_test extends DokuWikiTest {
         $this->assertTrue(mail_isvalid($info['email']));
         $this->assertRegExp('/^\d\d\d\d-\d\d-\d\d$/', $info['date']);
         $this->assertTrue(false !== strtotime($info['date']));
+    }
+
+    /**
+     * Test to ensure that every conf['...'] entry in conf/default.php has a corresponding meta['...'] entry in
+     * conf/metadata.php.
+     */
+    public function test_plugin_conf() {
+        include(__DIR__.'/../conf/default.php');
+        include(__DIR__.'/../conf/metadata.php');
+
+        if (gettype($conf) != 'NULL' && gettype($meta) != 'NULL') {
+            foreach($conf as $key => $value) {
+                $this->assertTrue(array_key_exists($key, $meta), 'Key $meta[\'' . $key . '\'] missing in ' . DOKU_PLUGIN . 'skilltagicon/conf/metadata.php');
+            }
+
+            foreach($meta as $key => $value) {
+                $this->assertTrue(array_key_exists($key, $conf), 'Key $conf[\'' . $key . '\'] missing in ' . DOKU_PLUGIN . 'skilltagicon/conf/default.php');
+            }
+        }
+
     }
 }
