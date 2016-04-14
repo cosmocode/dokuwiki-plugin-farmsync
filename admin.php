@@ -108,11 +108,16 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
 
         // We have to merge
         $commonroot = $this->findCommonAncestor($page, $remoteDataDir);
+        $remoteText = io_readFile($remoteFN);
         $diff3 = new \Diff3(explode("\n",$commonroot),
-            explode("\n",io_readFile($remoteFN)),
+            explode("\n", $remoteText),
             explode("\n",io_readFile(wikiFN($page)))
         );
         $final = join("\n",$diff3->mergedOutput());
+        if ($final == $remoteText) {
+            $result->setMergeResult(new MergeResult(MergeResult::unchanged));
+            return $result;
+        }
         if (!$diff3->_conflictingBlocks) {
             io_saveFile($remoteFN,$final);
             $result->setFinalText($final);
