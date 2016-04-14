@@ -44,92 +44,126 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
     }
 
     /**
-     * @param string[] $pages      List of pages to copy/update in the animals
+     * @param string[] $pagelines      List of pages to copy/update in the animals
      * @param string[] $animals    List of animals to update
      * @param          $farmHelper
      */
-    protected function updatePages($pages, $animals, $farmHelper) {
-        // $allAnimals = $farmHelper->getAllAnimals();
-        foreach ($animals as $animal) {
-            // if (empty($allAnimals[$animal])) {continue;} // FIXME: Show an error here
-            // $dataDir = $allAnimals[$animal]->getDataDir();
-            $dataDir = DOKU_FARMDIR . $animal . '/data/';
-            foreach ($pages as $page) {
-                if (trim($page) == '') continue;
-                if (substr($page,-1) == '*') {
-                    // clobbing for namespace
-                } else {
-                    if (!page_exists($page)) {
-                        msg("Page $page does not exist in source wiki!",-1);
-                        continue;
-                    }
-                    $result = $this->updatePage($page, $dataDir);
-                    $result->setAnimal($animal);
-                    $this->updated_pages[] = $result;
+    protected function updatePages($pagelines, $animals, $farmHelper) {
+        global $conf;
+        foreach ($pagelines as $line) {
+            if (trim($line) == '') continue;
+            $cleanline = str_replace('/',':', $line);
+            $pagesdir = DOKU_INC . $conf['savedir']. '/pages/' . join('/', explode(':',$cleanline, -1));
+            $namespace = join(':', explode(':',$cleanline, -1));
+            $pages = array();
+            if (substr($cleanline,-3) == ':**') {
+                search($pages,$pagesdir,'search_allpages',array());
+                foreach ($pages as $page) {
+                    $this->updatePage($namespace.':'.$page['id'], $animals);
                 }
+            } elseif (substr($cleanline,-2) == ':*') {
+                search($pages,$pagesdir,'search_allpages',array('depth' => 1));
+                dbglog($pages);
+                foreach ($pages as $page) {
+                    $this->updatePage($namespace.':'.$page['id'], $animals);
+                }
+            } else {
+                $page = cleanID($cleanline);
+                // adapted from resolve_pageid()
+                if(in_array(substr($page,-1), array(':', ';')) ||
+                    ($conf['useslash'] && substr($page,-1) == '/')){
+                    if(page_exists($page.$conf['start'])){
+                        // start page inside namespace
+                        $page = $page.$conf['start'];
+                        $exists = true;
+                    }elseif(page_exists($page.noNS(cleanID($page)))){
+                        // page named like the NS inside the NS
+                        $page = $page.noNS(cleanID($page));
+                        $exists = true;
+                    }elseif(page_exists($page)){
+                        // page like namespace exists
+                        $exists = true;
+                    }else{
+                        // fall back to default
+                        $page = $page.$conf['start'];
+                    }
+                }
+                if (!page_exists($page)) {
+                    msg("Page $page does not exist in source wiki!",-1);
+                    continue;
+                }
+                $this->updatePage($page, $animals);
             }
         }
     }
 
     /**
-     * @param $page
-     * @param $remoteDataDir
+     * @param string   $page
+     * @param string[] $animals
      * @return updateResults
      */
-    protected function updatePage($page, $remoteDataDir) {
+    protected function updatePage($page, $animals) {
         global $conf;
-        $result = new updateResults($page);
-        $parts = explode($conf['useslash'] ? '/' : ':',$page); // FIXME handle case of page ending in colon
-        $remoteFN = $remoteDataDir . 'pages/' . join('/',$parts) . ".txt";
-        $localModTime = filemtime(wikiFN($page));
-        if (!file_exists($remoteFN)) {
-            io_saveFile($remoteFN,io_readFile(wikiFN($page)));
-            touch($remoteFN,$localModTime);
-            $result->setMergeResult(new MergeResult(MergeResult::newFile));
-            return $result;
-        }
-        $remoteModTime = filemtime($remoteFN);
-        if ($remoteModTime == $localModTime) {
-            $result->setMergeResult(new MergeResult(MergeResult::unchanged));
-            return $result;
-        };
+        foreach ($animals as $animal) {
+            $remoteDataDir = DOKU_FARMDIR . $animal . '/data/';
+            $result = new updateResults($page, $animal);
+            $parts = explode($conf['useslash'] ? '/' : ':', $page); // FIXME handle case of page ending in colon
+            $remoteFN = $remoteDataDir . 'pages/' . join('/', $parts) . ".txt";
+            $localModTime = filemtime(wikiFN($page));
+            if (!file_exists($remoteFN)) {
+                io_saveFile($remoteFN, io_readFile(wikiFN($page)));
+                touch($remoteFN, $localModTime);
+                $result->setMergeResult(new MergeResult(MergeResult::newFile));
+                $this->updated_pages[] = $result;
+                continue;
+            }
+            $remoteModTime = filemtime($remoteFN);
+            if ($remoteModTime == $localModTime) {
+                $result->setMergeResult(new MergeResult(MergeResult::unchanged));
+                $this->updated_pages[] = $result;
+                continue;
+            };
 
-        $changelog = new PageChangelog($page);
-        $localArchiveText = io_readFile(DOKU_INC . $conf['savedir'].'/attic/'.join('/',$parts).'.'.$remoteModTime.'.txt.gz');
-        if ($remoteModTime < $localModTime &&
-            $changelog->getRevisionInfo($remoteModTime) &&
-            $localArchiveText == io_readFile($remoteFN)
-        ) {
-            io_saveFile($remoteFN,io_readFile(wikiFN($page)));
-            touch($remoteFN,$localModTime);
-            $result->setMergeResult(new MergeResult(MergeResult::fileOverwritten));
-            return $result;
-        }
+            $changelog = new PageChangelog($page);
+            $localArchiveText = io_readFile(DOKU_INC . $conf['savedir'] . '/attic/' . join('/', $parts) . '.' . $remoteModTime . '.txt.gz');
+            if ($remoteModTime < $localModTime &&
+                $changelog->getRevisionInfo($remoteModTime) &&
+                $localArchiveText == io_readFile($remoteFN)
+            ) {
+                io_saveFile($remoteFN, io_readFile(wikiFN($page)));
+                touch($remoteFN, $localModTime);
+                $result->setMergeResult(new MergeResult(MergeResult::fileOverwritten));
+                $this->updated_pages[] = $result;
+                continue;
+            }
 
-        // We have to merge
-        $commonroot = $this->findCommonAncestor($page, $remoteDataDir);
-        $remoteText = io_readFile($remoteFN);
-        $diff3 = new \Diff3(explode("\n",$commonroot),
-            explode("\n", $remoteText),
-            explode("\n",io_readFile(wikiFN($page)))
-        );
-        $final = join("\n",$diff3->mergedOutput());
-        if ($final == $remoteText) {
-            $result->setMergeResult(new MergeResult(MergeResult::unchanged));
-            return $result;
-        }
-        if (!$diff3->_conflictingBlocks) {
-            io_saveFile($remoteFN,$final);
+            // We have to merge
+            $commonroot = $this->findCommonAncestor($page, $remoteDataDir);
+            $remoteText = io_readFile($remoteFN);
+            $diff3 = new \Diff3(explode("\n", $commonroot),
+                explode("\n", $remoteText),
+                explode("\n", io_readFile(wikiFN($page)))
+            );
+            $final = join("\n", $diff3->mergedOutput());
+            if ($final == $remoteText) {
+                $result->setMergeResult(new MergeResult(MergeResult::unchanged));
+                $this->updated_pages[] = $result;
+                continue;
+            }
+            if (!$diff3->_conflictingBlocks) {
+                io_saveFile($remoteFN, $final);
+                $result->setFinalText($final);
+                $result->setMergeResult(new MergeResult(MergeResult::mergedWithoutConflicts));
+                $this->updated_pages[] = $result;
+                continue;
+            }
+            $result = new updateResultMergeConflict($page, $animal);
+            $result->setMergeResult(new MergeResult(MergeResult::mergedWithConflicts));
+            $result->setConflictingBlocks($diff3->_conflictingBlocks);
             $result->setFinalText($final);
-            $result->setMergeResult(new MergeResult(MergeResult::mergedWithoutConflicts));
-            return $result;
+            $this->updated_pages[] = $result;
+            continue;
         }
-        $result = new updateResultMergeConflict($page);
-        $result->setMergeResult(new MergeResult(MergeResult::mergedWithConflicts));
-        $result->setConflictingBlocks($diff3->_conflictingBlocks);
-        $result->setFinalText($final);
-        return $result;
-
     }
 
     /**
@@ -194,6 +228,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
         $pageid = array_pop($parts);
         $atticdir = $remoteDataDir . 'attic/' . join('/', $parts);
         $atticdir = rtrim($atticdir,'/') . '/';
+        if (!file_exists($atticdir)) return "";
         $dir = dir($atticdir);
         $oldrevisions = array();
         while (false !== ($entry = $dir->read())) {
@@ -289,8 +324,9 @@ class updateResults {
         return $this->_page;
     }
 
-    function __construct($page) {
+    function __construct($page, $animal) {
         $this->_page = $page;
+        $this->_animal = $animal;
     }
 }
 
