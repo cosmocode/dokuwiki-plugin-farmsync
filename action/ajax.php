@@ -46,7 +46,8 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
             return;
         }
         $localModTime = filemtime(wikiFN($page));
-        $remoteFN = DOKU_FARMDIR . $animal . '/data/pages/' . join('/', explode(':', $page)) . '.txt';
+        $animalDataDir = DOKU_FARMDIR . $animal . '/data/';
+        $remoteFN = $animalDataDir . 'pages/' . join('/', explode(':', $page)) . '.txt';
         // fixme: get data dir via farmer helper
         if (!$INPUT->has('farmsync-content')) {
             io_saveFile($remoteFN, io_readFile(wikiFN($page)));
@@ -58,9 +59,62 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
         }
 
         $content = $INPUT->str('farmsunc-content');
-        $remoteArchiveFileName = DOKU_FARMDIR . $animal . '/data/attic/' . join('/', explode(':', $page)) . '.' . $localModTime . '.txt.gz';
+        $remoteArchiveFileTrunk = $animalDataDir . 'attic/' . join('/', explode(':', $page));
+        $remoteArchiveFileName = $remoteArchiveFileTrunk . '.' . $localModTime . '.txt.gz';
+        $remoteChangelog = $animalDataDir . 'meta/' . join('/', explode(':', $page)) . 'change';
         dbglog($remoteArchiveFileName);
-        io_saveFile($remoteArchiveFileName, io_readFile(wikiFN($page))); // FIXME: What happens if the archive file already exists?
+        if (file_exists($remoteArchiveFileName)) {
+            $this->freeChangelogRevision($remoteChangelog, $localModTime);
+            $filesToIncrement = array($remoteArchiveFileName);
+            $i = 1;
+            while (file_exists($remoteArchiveFileTrunk . '.' . (intval($localModTime)+$i) . '.txt.gz')){
+                $filesToIncrement[] = $remoteArchiveFileTrunk . '.' . (intval($localModTime)+$i) . '.txt.gz';
+                $i += 1;
+            }
+            while (!empty($filesToIncrement)) {
+                $file = array_pop($filesToIncrement);
+                list($fid, $frev, $fextension) = explode('.', $file);
+                io_saveFile(join('.',array($fid, intval($frev)+1,$fextension)), io_readFile($file));
+            }
+        }
+        $this->insertIntoChangelog($remoteChangelog, $localModTime, clientIP(true), DOKU_CHANGE_TYPE_MINOR_EDIT, $page, $INPUT->server->str('REMOTE_USER'), "Revision inserted due to manual merge");
+        io_saveFile($remoteArchiveFileName, io_readFile(wikiFN($page)));
         io_saveFile($remoteFN, $content); // FIXME: Do we have to trigger the creation of an archive file? Should we trigger page write events? For what user?
+    }
+
+    public function freeChangelogRevision($changelogFile,$rev){
+        $lines = explode("\n",io_readFile($changelogFile));
+        $lineToMakeFree = -1;
+        foreach ($lines as $index => $line) {
+            if (substr($line,0,10) == $rev){
+                $lineToMakeFree = $index;
+                break;
+            }
+        }
+        if ($lineToMakeFree == -1) return;
+
+        do {
+            $parts = explode("\t",$lines[$lineToMakeFree]);
+            array_shift($parts);
+            array_unshift($parts,$rev+1);
+            $lines[$lineToMakeFree] = join("\t",$parts);
+            $lineToMakeFree += 1;
+            $rev += 1;
+        } while (substr($lines[$lineToMakeFree],0,10) == $rev);
+    }
+
+    public function insertIntoChangelog($changelogFile,$rev, $ip, $type, $page, $user, $sum, $extra="") {
+        $lines = explode("\n",io_readFile($changelogFile));
+        foreach ($lines as $index => $line) {
+            if (substr($line,0,10) == $rev) {
+                return false;
+            }
+            if (substr($line,0,10) > $rev) {
+                array_splice($lines, $index, 0, join("\t",array($rev, $ip, $type, $page, $user, $sum, $extra)));
+                return true;
+            }
+        }
+        array_splice($lines, $index, 0, join("\t",array($rev, $ip, $type, $page, $user, $sum, $extra)));
+        return true;
     }
 }
