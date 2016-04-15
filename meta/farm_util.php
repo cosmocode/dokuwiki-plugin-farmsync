@@ -33,7 +33,6 @@ class farm_util {
     }
 
     public function replaceRemoteFile($remoteFile, $content, $timestamp = false) {
-        dbglog("replace file $remoteFile");
         io_saveFile($remoteFile, $content);
         if ($timestamp) touch($remoteFile, $timestamp);
     }

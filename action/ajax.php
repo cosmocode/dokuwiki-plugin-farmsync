@@ -43,30 +43,48 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
         $event->stopPropagation();
 
         global $INPUT;
-        dbglog('ajax received');
 
         $animal = $INPUT->str('farmsync-animal');
         $page = $INPUT->str('farmsync-page');
         $sectok = $INPUT->str('sectok');
         if (!checkSecurityToken($sectok)) {
-            header('Content-Type: application/json');
-            http_status(403);
-            $json = new JSON;
-            echo $json->encode("");
+            $this->sendResponse(403,"Security-Token invalid!");
             return;
         }
-        $localModTime = filemtime(wikiFN($page));
-        $animalDataDir = $this->farm_util->getAnimalDataDir($animal);
+        // $localModTime = filemtime(wikiFN($page));
+        // $animalDataDir = $this->farm_util->getAnimalDataDir($animal);
         if (!$INPUT->has('farmsync-content')) {
-            $this->farm_util->saveRemotePage($animal, $page, io_readFile(wikiFN($page)), $localModTime);
-            header('Content-Type: application/json');
-            http_status(200);
-            $json = new JSON;
-            echo $json->encode("");
+            // $this->farm_util->saveRemotePage($animal, $page, io_readFile(wikiFN($page)), $localModTime);
+            $this->overwriteRemotePage($animal, $page);
+            $this->sendResponse(200,"");
             return;
         }
 
         $content = $INPUT->str('farmsync-content');
+        $this->writeManualMerge($animal, $page, $content);
+        $this->sendResponse(200,"");
+    }
+
+    /**
+     * @param int    $code
+     * @param string $msg
+     */
+    private function sendResponse($code, $msg){
+        header('Content-Type: application/json');
+        http_status($code);
+        $json = new JSON;
+        echo $json->encode($msg);
+    }
+
+    public function overwriteRemotePage($animal, $page) {
+        $localModTime = filemtime(wikiFN($page));
+        $this->farm_util->saveRemotePage($animal, $page, io_readFile(wikiFN($page)), $localModTime); // FIXME this may be problematic if there is a newer Version at the animal -> 'old revisions'?
+    }
+
+    public function writeManualMerge($animal, $page, $content) {
+        global $INPUT;
+        $localModTime = filemtime(wikiFN($page));
+        $animalDataDir = $this->farm_util->getAnimalDataDir($animal);
         $remoteArchiveFileTrunk = $animalDataDir . 'attic/' . join('/', explode(':', $page));
         $remoteArchiveFileName = $remoteArchiveFileTrunk . '.' . $localModTime . '.txt.gz';
         dbglog($remoteArchiveFileName);
