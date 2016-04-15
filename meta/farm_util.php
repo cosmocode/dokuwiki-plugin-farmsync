@@ -41,7 +41,7 @@ class farm_util {
     public function saveRemotePage($animal, $page, $content, $timestamp = false) {
         global $INPUT, $conf;
         if (!$timestamp) $timestamp = time();
-        $this->addRemoteChangelogRevision($animal, $page, $timestamp, clientIP(true), DOKU_CHANGE_TYPE_MINOR_EDIT, $INPUT->server->str('REMOTE_USER'), "Page updated from $conf[title]");
+        $this->addRemoteChangelogRevision($animal, $page, $timestamp, clientIP(true), DOKU_CHANGE_TYPE_EDIT, $INPUT->server->str('REMOTE_USER'), "Page updated from $conf[title] (".DOKU_URL.")");
         $this->replaceRemoteFile($this->getRemoteFilename($animal, $page), $content, $timestamp);
         $this->replaceRemoteFile($this->getAnimalDataDir($animal) . 'attic/' . join('/', explode(':', $page)).'.'.$timestamp.'.txt.gz', $content);
         // FIXME: update .meta
