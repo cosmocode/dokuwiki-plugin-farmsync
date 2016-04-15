@@ -41,6 +41,16 @@ class farm_util extends \plugin\farmsync\meta\farm_util {
         );
     }
 
+    public function setCommonAncestor($animal, $page, $content) {
+        $this->remoteData[$animal][$page]['commonAncestor'] = $content;
+    }
+
+    public function findCommonAncestor($page, $animal)
+    {
+        if (!isset($this->remoteData[$animal][$page]['commonAncestor'])) throw new \Exception('commonAncestor unset in mock');
+        return $this->remoteData[$animal][$page]['commonAncestor'];
+    }
+
     public function setPagemtime($animal, $page, $timestamp)
     {
         $this->remoteData[$animal][$page]['mtime'] = $timestamp;

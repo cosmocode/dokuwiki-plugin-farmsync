@@ -26,13 +26,16 @@ class pageUpdate_struct_test extends \DokuWikiTest {
 
         // act
         $admin->updatePage('test:page',array('testanimal'));
+        $updated_pages = $admin->getUpdatedPages();
 
         // assert
+        $this->assertEquals(count($mock_farm_util->receivedWriteCalls),1);
         $this->assertEquals(array(
             'remoteFile' => '/var/www/farm/testanimal/data/pages/test/page.txt',
             'content' => 'ABC',
             'timestamp' => 1400000000
         ),$mock_farm_util->receivedWriteCalls[0]);
+        $this->assertEquals($updated_pages[0]->getMergeResult(), \MergeResult::newFile);
     }
 
     public function test_updateAnimal_identicalFile() {
@@ -47,11 +50,15 @@ class pageUpdate_struct_test extends \DokuWikiTest {
         $admin = plugin_load('admin','farmsync');
         $admin->farm_util = $mock_farm_util;
 
+
         // act
         $admin->updatePage('test:page',array('testanimal'));
+        $updated_pages = $admin->getUpdatedPages();
 
         // assert
+        $this->assertEquals(count($mock_farm_util->receivedWriteCalls),0);
         $this->assertEquals(array(), $mock_farm_util->receivedWriteCalls);
+        $this->assertEquals($updated_pages[0]->getMergeResult(), \MergeResult::unchanged);
     }
 
     public function test_updateAnimal_remoteUnmodified() {
@@ -69,14 +76,99 @@ class pageUpdate_struct_test extends \DokuWikiTest {
         $admin = plugin_load('admin','farmsync');
         $admin->farm_util = $mock_farm_util;
 
+
         // act
         $admin->updatePage('test:page_remoteUnmodified',array('testanimal'));
+        $updated_pages = $admin->getUpdatedPages();
 
         // assert
+        $this->assertEquals(count($mock_farm_util->receivedWriteCalls),1);
         $this->assertEquals(array(
             'remoteFile' => '/var/www/farm/testanimal/data/pages/test/page_remoteUnmodified.txt',
             'content' => 'ABCD',
             'timestamp' => $newrev
         ),$mock_farm_util->receivedWriteCalls[0]);
+        $this->assertEquals($updated_pages[0]->getMergeResult(), \MergeResult::fileOverwritten);
+    }
+
+
+    public function test_updateAnimal_nolocalChanges() {
+        // arrange
+        $mock_farm_util = new mock\farm_util();
+        saveWikiText('test:page_nolocalChanges','ABC',"");
+        touch(wikiFN('test:page_nolocalChanges'),1400000000);
+        $mock_farm_util->setPageExists('testanimal','test:page_nolocalChanges',true);
+        $mock_farm_util->setPagemtime('testanimal','test:page_nolocalChanges',1400000001);
+        $mock_farm_util->setPageContent('testanimal','test:page_nolocalChanges','ABCD');
+        $mock_farm_util->setCommonAncestor('testanimal', 'test:page_nolocalChanges', 'ABC');
+        /** @var \admin_plugin_farmsync $admin */
+        $admin = plugin_load('admin','farmsync');
+        $admin->farm_util = $mock_farm_util;
+
+
+        // act
+        $admin->updatePage('test:page_nolocalChanges',array('testanimal'));
+        $updated_pages = $admin->getUpdatedPages();
+
+        // assert
+        $this->assertEquals(count($mock_farm_util->receivedWriteCalls),0);
+        $this->assertEquals(array(), $mock_farm_util->receivedWriteCalls);
+        $this->assertEquals($updated_pages[0]->getMergeResult(), \MergeResult::unchanged);
+    }
+
+    public function test_updateAnimal_successfulMerge() {
+        // arrange
+        $testpage = 'test:page_successfulMerge';
+        saveWikiText($testpage,"ABCX\n\nDEF\n","");
+        touch(wikiFN($testpage),1400000000);
+        $mock_farm_util = new mock\farm_util();
+        $mock_farm_util->setPageExists('testanimal',$testpage,true);
+        $mock_farm_util->setPagemtime('testanimal',$testpage,1400000001);
+        $mock_farm_util->setPageContent('testanimal',$testpage,"ABC\n\nDEFY\n");
+        $mock_farm_util->setCommonAncestor('testanimal', $testpage, "ABC\n\nDEF\n");
+        /** @var \admin_plugin_farmsync $admin */
+        $admin = plugin_load('admin','farmsync');
+        $admin->farm_util = $mock_farm_util;
+
+
+        // act
+        $admin->updatePage($testpage,array('testanimal'));
+        /** @var \updateResults[] $updated_pages */
+        $updated_pages = $admin->getUpdatedPages();
+
+        // assert
+        $this->assertEquals(count($mock_farm_util->receivedWriteCalls),1);
+        $this->assertEquals(array(
+            'remoteFile' => '/var/www/farm/testanimal/data/pages/test/page_successfulMerge.txt',
+            'content' => "ABCX\n\nDEFY\n",
+            'timestamp' => null
+        ),$mock_farm_util->receivedWriteCalls[0]);
+        $this->assertEquals($updated_pages[0]->getMergeResult(), \MergeResult::mergedWithoutConflicts);
+    }
+
+    public function test_updateAnimal_mergeConflicts() {
+        // arrange
+        $testpage = 'test:page_successfulMerge';
+        saveWikiText($testpage,"ABCX\n\nDEF\n","");
+        touch(wikiFN($testpage),1400000000);
+        $mock_farm_util = new mock\farm_util();
+        $mock_farm_util->setPageExists('testanimal',$testpage,true);
+        $mock_farm_util->setPagemtime('testanimal',$testpage,1400000001);
+        $mock_farm_util->setPageContent('testanimal',$testpage,"ABCY\n\nDEF\n");
+        $mock_farm_util->setCommonAncestor('testanimal', $testpage, "ABC\n\nDEF\n");
+        /** @var \admin_plugin_farmsync $admin */
+        $admin = plugin_load('admin','farmsync');
+        $admin->farm_util = $mock_farm_util;
+
+
+        // act
+        $admin->updatePage($testpage,array('testanimal'));
+        /** @var \updateResults[] $updated_pages */
+        $updated_pages = $admin->getUpdatedPages();
+
+        // assert
+        $this->assertEquals(count($mock_farm_util->receivedWriteCalls),0);
+        $this->assertEquals($updated_pages[0]->getMergeResult(), \MergeResult::mergedWithConflicts);
+        $this->assertEquals($updated_pages[0]->getFinalText(),"<<<<<<<\nABCY\n=======\nABCX\n>>>>>>>\n\nDEF\n");
     }
 }

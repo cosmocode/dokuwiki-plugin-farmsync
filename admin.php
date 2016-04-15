@@ -32,6 +32,10 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
     private $updated_pages;
     public $farm_util;
 
+    public function getUpdatedPages() {
+        return $this->updated_pages;
+    }
+
     function __construct()
     {
         $this->farm_util = new farm_util();
@@ -127,7 +131,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             }
 
             // We have to merge
-            $commonroot = $this->farm_util->findCommonAncestor($page, $remoteDataDir);
+            $commonroot = $this->farm_util->findCommonAncestor($page, $animal);
             $diff3 = new \Diff3(explode("\n", $commonroot), explode("\n", $remoteText), explode("\n", $localText));
             $final = join("\n", $diff3->mergedOutput());
             if ($final == $remoteText) {
