@@ -60,38 +60,54 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
      * @param          $farmHelper
      */
     protected function updatePages($pagelines, $animals, $farmHelper) {
-        global $conf;
+        $pages = array();
         foreach ($pagelines as $line) {
-            if (trim($line) == '') continue;
-            $cleanline = str_replace('/',':', $line);
-            $pagesdir = DOKU_INC . $conf['savedir']. '/pages/' . join('/', explode(':',$cleanline, -1));
-            $namespace = join(':', explode(':',$cleanline, -1));
-            $pages = array();
-            if (substr($cleanline,-3) == ':**') {
-                search($pages,$pagesdir,'search_allpages',array());
-                foreach ($pages as $page) {
-                    $this->updatePage($namespace.':'.$page['id'], $animals);
-                }
-            } elseif (substr($cleanline,-2) == ':*') {
-                search($pages,$pagesdir,'search_allpages',array('depth' => 1));
-                dbglog($pages);
-                foreach ($pages as $page) {
-                    $this->updatePage($namespace.':'.$page['id'], $animals);
-                }
-            } else {
-                $page = cleanID($cleanline);
-                // adapted from resolve_pageid()
-                if(in_array(substr($page,-1), array(':', ';')) ||
-                    ($conf['useslash'] && substr($page,-1) == '/')){
-                    $page = $this->handleStartpage($page);
-                }
-                if (!page_exists($page)) {
-                    msg("Page $page does not exist in source wiki!",-1);
-                    continue;
-                }
-                $this->updatePage($page, $animals);
-            }
+            $pages += $this->getPagesFromLine($line);
         }
+        array_unique($pages);
+        foreach ($pages as $page) {
+            $this->updatePage($page, $animals);
+        }
+    }
+
+    /**
+     * @param $line
+     *
+     * @return string[]
+     */
+    public function getPagesFromLine($line) {
+        global $conf;
+        if (trim($line) == '') return array();
+        $cleanline = str_replace('/',':', $line);
+        $pagesdir = join('/',explode('/',wikiFN(cleanID($line . 'a')),-1)); // FIXME find a cleaner solution
+        $namespace = join(':', explode(':',$cleanline, -1));
+        $pages = array();
+        if (substr($cleanline,-3) == ':**') {
+            $nspages = array();
+            search($nspages,$pagesdir,'search_allpages',array());
+            foreach ($nspages as $page) {
+                $pages[] = $namespace.':'.$page['id'];
+            }
+        } elseif (substr($cleanline,-2) == ':*') {
+            $nspages = array();
+            search($nspages,$pagesdir,'search_allpages',array('depth' => 1));
+            foreach ($nspages as $page) {
+                $pages[] = $namespace.':'.$page['id'];
+            }
+        } else {
+            // $page = cleanID($cleanline);
+            $page = $cleanline;
+            if(in_array(substr($page,-1), array(':', ';')) ||
+                ($conf['useslash'] && substr($page,-1) == '/')){
+                $page = $this->handleStartpage($page);
+            }
+            if (!page_exists($page)) {
+                msg("Page $page does not exist in source wiki!",-1);
+                return array();
+            }
+            $pages[] = $page;
+        }
+        return $pages;
     }
 
     /**
@@ -100,7 +116,6 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
      * @return updateResults
      */
     public function updatePage($page, $animals) {
-        global $conf;
         foreach ($animals as $animal) {
             $remoteDataDir = $this->farm_util->getAnimalDataDir($animal);
             $result = new updateResults($page, $animal);

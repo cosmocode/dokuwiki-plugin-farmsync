@@ -10,7 +10,7 @@ spl_autoload_register(array('action_plugin_farmsync_autoloader', 'autoloader'));
  * @group plugins
  *
  */
-class pageUpdate_struct_test extends \DokuWikiTest {
+class pageUpdate_farmsync_test extends \DokuWikiTest {
 
     protected $pluginsEnabled = array('farmsync',);
 
