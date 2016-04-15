@@ -95,7 +95,6 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 $pages[] = $namespace.':'.$page['id'];
             }
         } else {
-            // $page = cleanID($cleanline);
             $page = $cleanline;
             if(in_array(substr($page,-1), array(':', ';')) ||
                 ($conf['useslash'] && substr($page,-1) == '/')){
@@ -105,7 +104,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 msg("Page $page does not exist in source wiki!",-1);
                 return array();
             }
-            $pages[] = $page;
+            $pages[] = cleanID($page);
         }
         return $pages;
     }
@@ -210,21 +209,14 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
     {
         global $conf;
         if (page_exists($page . $conf['start'])) {
-            // start page inside namespace
             $page = $page . $conf['start'];
-            $exists = true;
             return $page;
         } elseif (page_exists($page . noNS(cleanID($page)))) {
-            // page named like the NS inside the NS
             $page = $page . noNS(cleanID($page));
-            $exists = true;
             return $page;
         } elseif (page_exists($page)) {
-            // page like namespace exists
-            $exists = true;
             return $page;
         } else {
-            // fall back to default
             $page = $page . $conf['start'];
             return $page;
         }

@@ -13,6 +13,15 @@ spl_autoload_register(array('action_plugin_farmsync_autoloader', 'autoloader'));
 class getPagesFromLine_farmsync_test extends \DokuWikiTest {
     protected $pluginsEnabled = array('farmsync');
 
+    public function setUp()
+    {
+        parent::setUp();
+        saveWikiText('wiki','','deleted');
+        saveWikiText('wiki:wiki','','deleted');
+        saveWikiText('wiki:start','','deleted');
+    }
+
+
     public function test_getPagesFromLine_singleExistingPage() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
@@ -80,6 +89,8 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         /** @var \admin_plugin_farmsync $admin */
         $admin = plugin_load('admin','farmsync');
         saveWikiText('wiki:start','text','sum');
+        saveWikiText('wiki:wiki','text','sum');
+        saveWikiText('wiki','text','sum');
 
         // act
         $actual_result = $admin->getPagesFromLine('wiki:');
@@ -88,5 +99,50 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         global $MSG;
         $this->assertEquals(array('wiki:start'), $actual_result);
         $this->assertEquals(count($MSG),0);
+    }
+
+    public function test_getPagesFromLine_startPage_likeNSinNS() {
+        // arrange
+        /** @var \admin_plugin_farmsync $admin */
+        $admin = plugin_load('admin','farmsync');
+        saveWikiText('wiki:wiki','text','sum');
+        saveWikiText('wiki','text','sum');
+
+        // act
+        $actual_result = $admin->getPagesFromLine('wiki:');
+
+        // assert
+        global $MSG;
+        $this->assertEquals(array('wiki:wiki'), $actual_result);
+        $this->assertEquals(count($MSG),0);
+    }
+
+    public function test_getPagesFromLine_startPage_likeNS() {
+        // arrange
+        /** @var \admin_plugin_farmsync $admin */
+        $admin = plugin_load('admin','farmsync');
+        saveWikiText('wiki','text','sum');
+
+        // act
+        $actual_result = $admin->getPagesFromLine('wiki:');
+
+        // assert
+        global $MSG;
+        $this->assertEquals(array('wiki'), $actual_result);
+        $this->assertEquals(count($MSG),0);
+    }
+
+    public function test_getPagesFromLine_startPage_missing() {
+        // arrange
+        /** @var \admin_plugin_farmsync $admin */
+        $admin = plugin_load('admin','farmsync');
+
+        // act
+        $actual_result = $admin->getPagesFromLine('wiki:');
+
+        // assert
+        global $MSG;
+        $this->assertEquals(array(), $actual_result);
+        $this->assertEquals(count($MSG),1);
     }
 }
