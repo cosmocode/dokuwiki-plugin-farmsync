@@ -116,14 +116,11 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
      */
     public function updatePage($page, $animals) {
         foreach ($animals as $animal) {
-            $remoteDataDir = $this->farm_util->getAnimalDataDir($animal);
             $result = new updateResults($page, $animal);
-            $parts = explode(':', $page);
-            $remoteFN = $remoteDataDir . 'pages/' . join('/', $parts) . ".txt";
             $localModTime = filemtime(wikiFN($page));
             $localText = io_readFile(wikiFN($page));
             if (!$this->farm_util->remotePageExists($animal, $page)) {
-                $this->farm_util->replaceRemoteFile($remoteFN, $localText, $localModTime);
+                $this->farm_util->saveRemotePage($animal, $page, $localText, $localModTime);
                 $result->setMergeResult(new MergeResult(MergeResult::newFile));
                 $this->updated_pages[] = $result;
                 continue;
@@ -138,7 +135,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
 
             $localArchiveText = io_readFile(wikiFN($page, $remoteModTime));
             if ($remoteModTime < $localModTime && $localArchiveText == $remoteText) {
-                $this->farm_util->replaceRemoteFile($remoteFN, $localText, $localModTime);
+                $this->farm_util->saveRemotePage($animal, $page, $localText, $localModTime);
                 $result->setMergeResult(new MergeResult(MergeResult::fileOverwritten));
                 $this->updated_pages[] = $result;
                 continue;
@@ -154,7 +151,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 continue;
             }
             if (!$diff3->_conflictingBlocks) {
-                $this->farm_util->replaceRemoteFile($remoteFN, $final);
+                $this->farm_util->saveRemotePage($animal, $page, $final);
                 $result->setFinalText($final);
                 $result->setMergeResult(new MergeResult(MergeResult::mergedWithoutConflicts));
                 $this->updated_pages[] = $result;

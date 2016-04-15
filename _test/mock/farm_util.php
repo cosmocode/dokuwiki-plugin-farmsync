@@ -6,10 +6,12 @@ class farm_util extends \plugin\farmsync\meta\farm_util {
 
     private $remoteData;
     public $receivedWriteCalls;
+    public $receivedPageWriteCalls;
 
     function __construct()
     {
         $this->receivedWriteCalls = array();
+        $this->receivedPageWriteCalls = array();
     }
 
     /**
@@ -49,6 +51,16 @@ class farm_util extends \plugin\farmsync\meta\farm_util {
     {
         if (!isset($this->remoteData[$animal][$page]['commonAncestor'])) throw new \Exception('commonAncestor unset in mock');
         return $this->remoteData[$animal][$page]['commonAncestor'];
+    }
+
+    public function saveRemotePage($animal, $page, $content, $timestamp = false)
+    {
+        $this->receivedPageWriteCalls[] = array(
+            'animal' => $animal,
+            'page' => $page,
+            'content' => $content,
+            'timestamp' => $timestamp
+        );
     }
 
     public function setPagemtime($animal, $page, $timestamp)

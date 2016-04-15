@@ -38,6 +38,12 @@ class farm_util {
         if ($timestamp) touch($remoteFile, $timestamp);
     }
 
+    /**
+     * @param string $animal
+     * @param string $page
+     * @param string $content
+     * @param string|int $timestamp
+     */
     public function saveRemotePage($animal, $page, $content, $timestamp = false) {
         global $INPUT, $conf;
         if (!$timestamp) $timestamp = time();
