@@ -28,7 +28,7 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         $admin = plugin_load('admin','farmsync');
 
         // act
-        $actual_result = $admin->getPagesFromLine('wiki:syntax');
+        $actual_result = $admin->getDocumentsFromLine('wiki:syntax');
 
         // assert
         $this->assertEquals(array('wiki:syntax'), $actual_result);
@@ -40,7 +40,7 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         $admin = plugin_load('admin','farmsync');
 
         // act
-        $actual_result = $admin->getPagesFromLine('wiki:*');
+        $actual_result = $admin->getDocumentsFromLine('wiki:*');
 
         // assert
         $this->assertEquals(array('wiki:dokuwiki','wiki:syntax'), $actual_result);
@@ -52,7 +52,7 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         $admin = plugin_load('admin','farmsync');
 
         // act
-        $actual_result = $admin->getPagesFromLine(':*');
+        $actual_result = $admin->getDocumentsFromLine(':*');
 
         // assert
         $this->assertEquals(array(':mailinglist'), $actual_result);
@@ -64,7 +64,7 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         $admin = plugin_load('admin','farmsync');
 
         // act
-        $actual_result = $admin->getPagesFromLine(':**');
+        $actual_result = $admin->getDocumentsFromLine(':**');
 
         // assert
         $this->assertEquals(array(':wiki:dokuwiki',':wiki:syntax',':mailinglist'), $actual_result);
@@ -76,7 +76,7 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         $admin = plugin_load('admin','farmsync');
 
         // act
-        $actual_result = $admin->getPagesFromLine('foo');
+        $actual_result = $admin->getDocumentsFromLine('foo');
 
         // assert
         global $MSG;
@@ -93,7 +93,7 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         saveWikiText('wiki','text','sum');
 
         // act
-        $actual_result = $admin->getPagesFromLine('wiki:');
+        $actual_result = $admin->getDocumentsFromLine('wiki:');
 
         // assert
         global $MSG;
@@ -101,7 +101,7 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         $this->assertEquals(count($MSG),0);
     }
 
-    public function test_getPagesFromLine_startPage_likeNSinNS() {
+    public function test_getPagesFromLine_startPage_inNSlikeNS() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
         $admin = plugin_load('admin','farmsync');
@@ -109,7 +109,7 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         saveWikiText('wiki','text','sum');
 
         // act
-        $actual_result = $admin->getPagesFromLine('wiki:');
+        $actual_result = $admin->getDocumentsFromLine('wiki:');
 
         // assert
         global $MSG;
@@ -124,7 +124,7 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         saveWikiText('wiki','text','sum');
 
         // act
-        $actual_result = $admin->getPagesFromLine('wiki:');
+        $actual_result = $admin->getDocumentsFromLine('wiki:');
 
         // assert
         global $MSG;
@@ -138,7 +138,7 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         $admin = plugin_load('admin','farmsync');
 
         // act
-        $actual_result = $admin->getPagesFromLine('wiki:');
+        $actual_result = $admin->getDocumentsFromLine('wiki:');
 
         // assert
         global $MSG;

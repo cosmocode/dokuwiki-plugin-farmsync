@@ -13,6 +13,7 @@ jQuery(function(){
         var $this = jQuery(this);
         var animal = $this.parent('form').data('animal');
         var page = $this.parent('form').data('page');
+        var ismedia = $this.parent('form').data('ismedia');
         var sectok = $this.parent('form').find('input[name="sectok"]').val();
         jQuery.post(
             DOKU_BASE + 'lib/exe/ajax.php',
@@ -21,12 +22,14 @@ jQuery(function(){
                 'farmsync-animal': animal,
                 'farmsync-page': page,
                 'farmsync-action': 'overwrite',
+                'farmsync-ismedia': ismedia,
                 'sectok': sectok
             }
-        ).done(function () {
+        ).done(function (data, textStatus, jqXHR) {
             $this.replaceWith('<span>Done!</span>');
-        }).fail(function () {
-            $this.replaceWith('<span>Failure!</span>');
+        }).fail(function (jqXHR, textStatus, errorThrown) {
+            $this.replaceWith('<span>Failure! ' + textStatus + ' ' + errorThrown + '</span>');
+            console.dir(jqXHR);
         });
         jQuery('form[data-animal="' + animal + '"][data-page="' + page + '"] button').hide();
     });

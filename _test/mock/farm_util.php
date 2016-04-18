@@ -69,7 +69,7 @@ class farm_util extends \plugin\farmsync\meta\farm_util {
     }
 
 
-    public function getRemotePagemtime($animal,$page)
+    public function getRemoteFilemtime($animal, $page, $ismedia = false)
     {
         return $this->remoteData[$animal][$page]['mtime'];
     }

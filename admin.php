@@ -30,15 +30,22 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
     }
 
     private $updated_pages;
+    private $updated_media;
     public $farm_util;
 
     public function getUpdatedPages() {
         return $this->updated_pages;
     }
 
+    public function getUpdatedMedia() {
+        return $this->updated_media;
+    }
+
     function __construct()
     {
         $this->farm_util = new farm_util();
+        $this->updated_pages = array();
+        $this->updated_media = array();
     }
 
     /**
@@ -49,9 +56,11 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
         if (!($INPUT->has('farmsync-animals') && $INPUT->has('farmsync'))) return;
         $animals = array_keys($INPUT->arr('farmsync-animals'));
         $options = $INPUT->arr('farmsync');
-        $pages = explode("\n",$options['pages']);
-        $media = explode("\n",$options['media']);
-        $this->updatePages($pages, $animals, "");
+        $textare_linebreak = "\r\n";
+        $pages = explode($textare_linebreak, $options['pages']);
+        $media = explode($textare_linebreak, $options['media']);
+        $this->updatePages($pages, $animals);
+        $this->updateMedia($media, $animals);
     }
 
     /**
@@ -59,10 +68,10 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
      * @param string[] $animals    List of animals to update
      * @param          $farmHelper
      */
-    protected function updatePages($pagelines, $animals, $farmHelper) {
+    protected function updatePages($pagelines, $animals) {
         $pages = array();
         foreach ($pagelines as $line) {
-            $pages += $this->getPagesFromLine($line);
+            $pages += $this->getDocumentsFromLine($line);
         }
         array_unique($pages);
         foreach ($pages as $page) {
@@ -71,42 +80,96 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
     }
 
     /**
-     * @param $line
+     * @param string[] $medialines
+     * @param string[] $animals
+     */
+    private function updateMedia($medialines, $animals) {
+        $media = array();
+        foreach ($medialines as $line) {
+            $media += $this->getDocumentsFromLine($line, true);
+        }
+        array_unique($media);
+        foreach ($media as $medium) {
+            $this->updateMedium($medium, $animals);
+        }
+    }
+
+    /**
+     * @param string $line
+     * @param bool   $ismedia
      *
      * @return string[]
      */
-    public function getPagesFromLine($line) {
+    public function getDocumentsFromLine($line, $ismedia = false) {
         global $conf;
         if (trim($line) == '') return array();
         $cleanline = str_replace('/',':', $line);
-        $pagesdir = join('/',explode('/',wikiFN(cleanID($line . 'a')),-1)); // FIXME find a cleaner solution
         $namespace = join(':', explode(':',$cleanline, -1));
-        $pages = array();
+        $documentdir = dirname($ismedia ? mediaFN($cleanline, null, false) : wikiFN($cleanline, null, false));
+        $search_algo = $ismedia ? 'search_media' : 'search_allpages';
+        $documents = array();
         if (substr($cleanline,-3) == ':**') {
-            $nspages = array();
-            search($nspages,$pagesdir,'search_allpages',array());
-            foreach ($nspages as $page) {
-                $pages[] = $namespace.':'.$page['id'];
+            $nsfiles = array();
+            search($nsfiles,$documentdir, $search_algo,array());
+            foreach ($nsfiles as $document) {
+                $documents[] = $namespace.':'.$document['id'];
             }
         } elseif (substr($cleanline,-2) == ':*') {
-            $nspages = array();
-            search($nspages,$pagesdir,'search_allpages',array('depth' => 1));
-            foreach ($nspages as $page) {
-                $pages[] = $namespace.':'.$page['id'];
+            $nsfiles = array();
+            search($nsfiles,$documentdir, $search_algo,array('depth' => 1));
+            foreach ($nsfiles as $document) {
+                $documents[] = $namespace.':'.$document['id'];
             }
         } else {
-            $page = $cleanline;
-            if(in_array(substr($page,-1), array(':', ';')) ||
-                ($conf['useslash'] && substr($page,-1) == '/')){
-                $page = $this->handleStartpage($page);
+            $document = $cleanline;
+            if(!$ismedia && in_array(substr($document,-1), array(':', ';')) ||
+                ($conf['useslash'] && substr($document,-1) == '/')){
+                $document = $this->handleStartpage($document);
             }
-            if (!page_exists($page)) {
-                msg("Page $page does not exist in source wiki!",-1);
+            if (!$ismedia && !page_exists($document)) {
+                msg("Page $document does not exist in source wiki!",-1);
                 return array();
             }
-            $pages[] = cleanID($page);
+            if ($ismedia && (!file_exists(mediaFN($document)) || is_dir(mediaFN($document)))) {
+                msg("Media-file $document does not exist in source wiki!",-1);
+                return array();
+            }
+            $documents[] = cleanID($document);
         }
-        return $pages;
+        return $documents;
+    }
+
+    public function updateMedium($medium, $animals) {
+        $localModTime = filemtime(mediaFN($medium));
+        foreach ($animals as $animal) {
+            $result = new updateResults($medium, $animal);
+            if (!$this->farm_util->remoteMediaExists($animal, $medium)) {
+                $this->farm_util->saveRemoteMedia($animal, $medium);
+                $result->setMergeResult(new MergeResult(MergeResult::newFile));
+                $this->updated_media[] = $result;
+                continue;
+            }
+            $remoteModTime = $this->farm_util->getRemoteFilemtime($animal,$medium, true);
+            if ($remoteModTime == $localModTime && io_readFile(mediaFN($medium)) == $this->farm_util->readRemoteMedia($animal, $medium)) {
+                $result->setMergeResult(new MergeResult(MergeResult::unchanged));
+                $this->updated_media[] = $result;
+                continue;
+            }
+            if (file_exists(mediaFN($medium,$remoteModTime)) && io_readFile(mediaFN($medium,$remoteModTime)) == $this->farm_util->readRemoteMedia($animal, $medium)) {
+                $this->farm_util->saveRemoteMedia($animal, $medium);
+                $result->setMergeResult(new MergeResult(MergeResult::fileOverwritten));
+                $this->updated_media[] = $result;
+                continue;
+            }
+            if ($this->farm_util->remoteMediaExists($animal, $medium, $localModTime) && io_readFile(mediaFN($medium)) == $this->farm_util->readRemoteMedia($animal, $medium, $localModTime)) {
+                $result->setMergeResult(new MergeResult(MergeResult::unchanged));
+                $this->updated_media[] = $result;
+                continue;
+            }
+            $result = new MediaConflict($medium, $animal);
+            $result->setMergeResult(new MergeResult(MergeResult::conflicts));
+            $this->updated_media[] = $result;
+        }
     }
 
     /**
@@ -125,13 +188,13 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 $this->updated_pages[] = $result;
                 continue;
             }
-            $remoteModTime = $this->farm_util->getRemotePagemtime($animal,$page);
+            $remoteModTime = $this->farm_util->getRemoteFilemtime($animal,$page);
             $remoteText = $this->farm_util->readRemotePage($animal, $page);
             if ($remoteModTime == $localModTime && $remoteText == $localText) {
                 $result->setMergeResult(new MergeResult(MergeResult::unchanged));
                 $this->updated_pages[] = $result;
                 continue;
-            };
+            }
 
             $localArchiveText = io_readFile(wikiFN($page, $remoteModTime));
             if ($remoteModTime < $localModTime && $localArchiveText == $remoteText) {
@@ -158,7 +221,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 continue;
             }
             $result = new updateResultMergeConflict($page, $animal);
-            $result->setMergeResult(new MergeResult(MergeResult::mergedWithConflicts));
+            $result->setMergeResult(new MergeResult(MergeResult::conflicts));
             $result->setConflictingBlocks($diff3->_conflictingBlocks);
             $result->setFinalText($final);
             $this->updated_pages[] = $result;
@@ -170,7 +233,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
      * Render HTML output, e.g. helpful text and a form
      */
     public function html() {
-        if (empty($this->updated_pages)) {
+        if (empty($this->updated_pages) && empty($this->updated_media)) {
             echo '<h1>' . $this->getLang('menu') . '</h1>';
             $form = new Form();
             $form->addTextarea('farmsync[pages]', $this->getLang('label:PageEntry'));
@@ -189,6 +252,14 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
         echo "<ul>";
         /** @var updateResults $result */
         foreach ($this->updated_pages as $result) {
+            echo "<li>";
+            echo $result->getResultLine();
+            echo "</li>";
+        }
+        echo "</ul>";
+        echo "<ul>";
+        /** @var updateResults $result */
+        foreach ($this->updated_media as $result) {
             echo "<li>";
             echo $result->getResultLine();
             echo "</li>";
@@ -229,6 +300,7 @@ class updateResults {
     private $_mergeResult;
     private $_animal;
     private $_page;
+    protected $_farm_util;
 
     /**
      * @return string
@@ -294,6 +366,7 @@ class updateResults {
     function __construct($page, $animal) {
         $this->_page = $page;
         $this->_animal = $animal;
+        $this->_farm_util = new farm_util();
     }
 }
 
@@ -333,6 +406,31 @@ class updateResultMergeConflict extends updateResults {
     }
 }
 
+class MediaConflict extends updateResults {
+    public function getResultLine() {
+        $result = $this->getAnimal() . " " . $this->getPage() . " Conflict: ";
+        $form = new Form();
+        $form->attrs(array('data-animal'=>$this->getAnimal(),"data-page" => $this->getPage(), "data-ismedia" => true));
+
+        $sourcelink = $form->addTagOpen('a');
+        $sourcelink->attr('href',DOKU_URL."lib/exe/detail.php?media=".$this->getPage());
+        $form->addHTML('Source Version');
+        $form->addTagClose('a');
+
+        $animalbase = $this->_farm_util->getAnimalLink($this->getAnimal());
+        $animallink = $form->addTagOpen('a');
+        $animallink->attr('href',"$animalbase/lib/exe/detail.php?media=".$this->getPage());
+        $form->addHTML('Animal Version');
+        $form->addTagClose('a');
+
+        $form->addButton("theirs","Keep theirs");
+        $form->addButton("override","Overwrite theirs");
+
+        $result .= $form->toHTML();
+        return $result;
+    }
+}
+
 /**
  * Class BasicEnum from http://www.whitewashing.de/2009/08/31/enums-in-php.html
  */
@@ -357,7 +455,7 @@ class MergeResult extends BasicEnum {
     const newFile = "new file";
     const fileOverwritten = "file overwritten";
     const mergedWithoutConflicts = "merged without conflicts";
-    const mergedWithConflicts = "merged with Conflicts";
+    const conflicts = "merged with Conflicts";
     const unchanged = "unchanged";
 }
 

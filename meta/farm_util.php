@@ -46,32 +46,71 @@ class farm_util {
     public function saveRemotePage($animal, $page, $content, $timestamp = false) {
         global $INPUT, $conf;
         if (!$timestamp) $timestamp = time();
-        $this->addRemoteChangelogRevision($animal, $page, $timestamp, clientIP(true), DOKU_CHANGE_TYPE_EDIT, $INPUT->server->str('REMOTE_USER'), "Page updated from $conf[title] (".DOKU_URL.")");
+        $this->addRemotePageChangelogRevision($animal, $page, $timestamp, clientIP(true), DOKU_CHANGE_TYPE_EDIT, $INPUT->server->str('REMOTE_USER'), "Page updated from $conf[title] (".DOKU_URL.")");
         $this->replaceRemoteFile($this->getRemoteFilename($animal, $page), $content, $timestamp);
         $this->replaceRemoteFile($this->getAnimalDataDir($animal) . 'attic/' . join('/', explode(':', $page)).'.'.$timestamp.'.txt.gz', $content);
-        // FIXME: update .meta
+        // FIXME: update .meta ?
+    }
+
+    public function saveRemoteMedia($animal, $medium) {
+        global $INPUT, $conf;
+        $timestamp = filemtime(mediaFN($medium));
+        $this->addRemoteMediaChangelogRevision($animal, $medium, $timestamp, clientIP(true), DOKU_CHANGE_TYPE_EDIT, $INPUT->server->str('REMOTE_USER'), "File updated from $conf[title] (".DOKU_URL.")");
+        $this->replaceRemoteFile($this->getRemoteMediaFilename($animal, $medium), io_readFile(mediaFN($medium), false), $timestamp);
+        $this->replaceRemoteFile($this->getRemoteMediaFilename($animal, $medium, $timestamp), io_readFile(mediaFN($medium), false), $timestamp);
     }
 
     public function readRemotePage($animal, $page) {
         return io_readFile($this->getRemoteFilename($animal, $page));
     }
 
+    public function readRemoteMedia($animal, $medium, $timestamp = null) {
+        return io_readFile($this->getRemoteMediaFilename($animal, $medium, $timestamp));
+    }
+
     public function readRemoteFile($remoteFileName) {
         return io_readFile($remoteFileName);
     }
 
-    public function getRemotePagemtime($animal, $page) {
-        return filemtime($this->getRemoteFilename($animal, $page));
+    /**
+     * @param string $animal
+     * @param string $document   Either the page-id or the media-id, colon-separated
+     * @param bool   $ismedia
+     * @return mixed
+     */
+    public function getRemoteFilemtime($animal, $document, $ismedia = false) {
+        if ($ismedia) return filemtime($this->getRemoteMediaFilename($animal, $document));
+        return filemtime($this->getRemoteFilename($animal, $document));
     }
 
     public function remotePageExists($animal, $page) {
         return file_exists($this->getRemoteFilename($animal, $page));
     }
 
-    private function getRemoteFilename($animal, $page) {
+    private function getRemoteMediaFilename($animal, $medium, $timestamp = null) {
+        global $conf;
+        $animaldir = $this->getAnimalDataDir($animal);
+        $source_mediaolddir = $conf['mediaolddir'];
+        $conf['mediaolddir'] = $animaldir . 'media_attic';
+        $source_mediadir = $conf['mediadir'];
+        $conf['mediadir'] = $animaldir . 'media';
+
+        $mediaFN = mediaFN($medium, $timestamp);
+
+        $conf['mediaolddir'] = $source_mediaolddir;
+        $conf['mediadir'] = $source_mediadir;
+
+        return $mediaFN;
+    }
+
+    private function getRemoteFilename($animal, $document, $ismedia=false) {
         $remoteDataDir = $this->getAnimalDataDir($animal);
-        $parts = explode(':', $page);
-        return $remoteDataDir . 'pages/' . join('/', $parts) . ".txt";
+        $parts = explode(':', $document);
+        if ($ismedia) {
+            return $remoteDataDir . 'media/' . join('/', $parts);
+        } else {
+            return $remoteDataDir . 'pages/' . join('/', $parts) . ".txt";
+        }
     }
 
     public function findCommonAncestor($page, $animal)
@@ -105,9 +144,17 @@ class farm_util {
         return "";
     }
 
-    public function addRemoteChangelogRevision($animal, $page, $rev, $ip, $type, $user, $sum="", $extra=""){
+    public function addRemotePageChangelogRevision($animal, $page, $rev, $ip, $type, $user, $sum="", $extra="") {
         $remoteChangelog = $this->getAnimalDataDir($animal) . 'meta/' . join('/', explode(':', $page)) . '.changes';
+        $this->addRemoteChangelogRevision($remoteChangelog, $page, $rev, $ip, $type, $user, $sum, $extra);
+    }
 
+    public function addRemoteMediaChangelogRevision($animal, $medium, $rev, $ip, $type, $user, $sum="", $extra="") {
+        $remoteChangelog = $this->getAnimalDataDir($animal) . 'media_meta/' . join('/', explode(':', $medium)) . '.changes';
+        $this->addRemoteChangelogRevision($remoteChangelog, $medium, $rev, $ip, $type, $user, $sum, $extra);
+    }
+
+    public function addRemoteChangelogRevision($remoteChangelog, $document, $rev, $ip, $type, $user, $sum, $extra){
         $lines = explode("\n",io_readFile($remoteChangelog));
         $lineindex = -1;
         foreach ($lines as $index => $line) {
@@ -121,7 +168,7 @@ class farm_util {
                 break;
             }
         }
-        array_splice($lines, $lineindex, 0, join("\t",array($rev, $ip, $type, $page, $user, $sum, $extra)));
+        array_splice($lines, $lineindex, 0, join("\t",array($rev, $ip, $type, $document, $user, $sum, $extra)));
 
         $this->replaceRemoteFile($remoteChangelog, join("\n",$lines));
 
@@ -146,6 +193,16 @@ class farm_util {
             $rev += 1;
         } while (substr($lines[$lineToMakeFree],0,10) == $rev);
         return $lines;
+    }
+
+    public function remoteMediaExists($animal, $medium, $timestamp = null) {
+        return file_exists($this->getRemoteMediaFilename($animal, $medium, $timestamp));
+    }
+
+    public function getAnimalLink($animal) {
+        // FIXME replace with farmer plugin helper function
+        global $INPUT;
+        return $INPUT->server->str('REQUEST_SCHEME').'://'.$animal;
     }
 
 }

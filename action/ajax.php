@@ -51,11 +51,12 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
             $this->sendResponse(403,"Security-Token invalid!");
             return;
         }
-        // $localModTime = filemtime(wikiFN($page));
-        // $animalDataDir = $this->farm_util->getAnimalDataDir($animal);
         if (!$INPUT->has('farmsync-content')) {
-            // $this->farm_util->saveRemotePage($animal, $page, io_readFile(wikiFN($page)), $localModTime);
-            $this->overwriteRemotePage($animal, $page);
+            if ($INPUT->bool('farmsync-ismedia')) {
+                $this->farm_util->saveRemoteMedia($animal, $page);
+            } else {
+                $this->overwriteRemotePage($animal, $page);
+            }
             $this->sendResponse(200,"");
             return;
         }
@@ -101,7 +102,7 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
                 io_saveFile(join('.',array($fid, intval($frev)+1,$fextension)), io_readFile($file));
             }
         }
-        $this->farm_util->addRemoteChangelogRevision($animal, $page, $localModTime, clientIP(true), DOKU_CHANGE_TYPE_MINOR_EDIT, $INPUT->server->str('REMOTE_USER'), "Revision inserted due to manual merge");
+        $this->farm_util->addRemotePageChangelogRevision($animal, $page, $localModTime, clientIP(true), DOKU_CHANGE_TYPE_MINOR_EDIT, $INPUT->server->str('REMOTE_USER'), "Revision inserted due to manual merge");
         $this->farm_util->replaceRemoteFile($remoteArchiveFileName, io_readFile(wikiFN($page)));
         $this->farm_util->saveRemotePage($animal, $page, $content);
     }

@@ -177,7 +177,7 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
         // assert
         $this->assertEquals(count($mock_farm_util->receivedWriteCalls),0);
         $this->assertEquals(count($mock_farm_util->receivedPageWriteCalls),0);
-        $this->assertEquals($updated_pages[0]->getMergeResult(), \MergeResult::mergedWithConflicts);
+        $this->assertEquals($updated_pages[0]->getMergeResult(), \MergeResult::conflicts);
         $this->assertEquals($updated_pages[0]->getFinalText(),"<<<<<<<\nABCY\n=======\nABCX\n>>>>>>>\n\nDEF\n");
     }
 }
