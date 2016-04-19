@@ -46,16 +46,18 @@ class farm_util {
     public function saveRemotePage($animal, $page, $content, $timestamp = false) {
         global $INPUT, $conf;
         if (!$timestamp) $timestamp = time();
-        $this->addRemotePageChangelogRevision($animal, $page, $timestamp, clientIP(true), DOKU_CHANGE_TYPE_EDIT, $INPUT->server->str('REMOTE_USER'), "Page updated from $conf[title] (".DOKU_URL.")");
+        $changelogLine = join("\t",array($timestamp, clientIP(true), DOKU_CHANGE_TYPE_EDIT, $page, $INPUT->server->str('REMOTE_USER'), "Page updated from $conf[title] (".DOKU_URL.")"));
+        $this->addRemotePageChangelogRevision($animal, $page, $timestamp, $changelogLine);
         $this->replaceRemoteFile($this->getRemoteFilename($animal, $page), $content, $timestamp);
-        $this->replaceRemoteFile($this->getAnimalDataDir($animal) . 'attic/' . join('/', explode(':', $page)).'.'.$timestamp.'.txt.gz', $content);
+        $this->replaceRemoteFile($this->getRemoteFilename($animal, $page, $timestamp), $content);
         // FIXME: update .meta ?
     }
 
     public function saveRemoteMedia($animal, $medium) {
         global $INPUT, $conf;
         $timestamp = filemtime(mediaFN($medium));
-        $this->addRemoteMediaChangelogRevision($animal, $medium, $timestamp, clientIP(true), DOKU_CHANGE_TYPE_EDIT, $INPUT->server->str('REMOTE_USER'), "File updated from $conf[title] (".DOKU_URL.")");
+        $changelogLine = join("\t",array($timestamp, clientIP(true), DOKU_CHANGE_TYPE_EDIT, $medium, $INPUT->server->str('REMOTE_USER'), "Page updated from $conf[title] (".DOKU_URL.")"));
+        $this->addRemoteMediaChangelogRevision($animal, $medium, $timestamp, $changelogLine);
         $this->replaceRemoteFile($this->getRemoteMediaFilename($animal, $medium), io_readFile(mediaFN($medium), false), $timestamp);
         $this->replaceRemoteFile($this->getRemoteMediaFilename($animal, $medium, $timestamp), io_readFile(mediaFN($medium), false), $timestamp);
     }
@@ -87,7 +89,7 @@ class farm_util {
         return file_exists($this->getRemoteFilename($animal, $page));
     }
 
-    private function getRemoteMediaFilename($animal, $medium, $timestamp = null) {
+    public function getRemoteMediaFilename($animal, $medium, $timestamp = null) {
         global $conf;
         $animaldir = $this->getAnimalDataDir($animal);
         $source_mediaolddir = $conf['mediaolddir'];
@@ -103,19 +105,24 @@ class farm_util {
         return $mediaFN;
     }
 
-    private function getRemoteFilename($animal, $document, $ismedia=false) {
+    public function getRemoteFilename($animal, $document, $timestamp = null) {
+        global $conf;
         $remoteDataDir = $this->getAnimalDataDir($animal);
-        $parts = explode(':', $document);
-        if ($ismedia) {
-            return $remoteDataDir . 'media/' . join('/', $parts);
-        } else {
-            return $remoteDataDir . 'pages/' . join('/', $parts) . ".txt";
-        }
+        $source_datadir = $conf['datadir'];
+        $conf['datadir'] = $remoteDataDir . 'pages';
+        $source_olddir = $conf['olddir'];
+        $conf['olddir'] = $remoteDataDir . 'attic';
+
+        $FN = wikiFN($document, $timestamp);
+
+        $conf['datadir'] = $source_datadir;
+        $conf['olddir'] = $source_olddir;
+
+        return $FN;
     }
 
     public function findCommonAncestor($page, $animal)
     {
-        global $conf;
         $remoteDataDir = $this->getAnimalDataDir($animal);
         $parts = explode(':',$page);
         $pageid = array_pop($parts);
@@ -135,8 +142,8 @@ class farm_util {
         $changelog = new \PageChangelog($page);
         foreach ($oldrevisions as $rev) {
             if (!$changelog->getRevisionInfo($rev)) continue;
-            $localArchiveText = io_readFile(DOKU_INC . $conf['savedir'].'/attic/'.join('/',$parts). $pageid . '.'.$rev.'.txt.gz'); // FIXME: Replace with wikiFN($page, $rev)
-            $remoteArchiveText = io_readFile($atticdir . $pageid . '.' . $rev . '.txt.gz');
+            $localArchiveText = io_readFile(wikiFN($page,$rev));
+            $remoteArchiveText = io_readFile($this->getRemoteFilename($animal, $page, $rev));
             if ($localArchiveText == $remoteArchiveText) {
                 return $localArchiveText;
             }
@@ -144,22 +151,31 @@ class farm_util {
         return "";
     }
 
-    public function addRemotePageChangelogRevision($animal, $page, $rev, $ip, $type, $user, $sum="", $extra="") {
+    public function addRemotePageChangelogRevision($animal, $page, $rev, $changelogLine, $truncate = true) {
         $remoteChangelog = $this->getAnimalDataDir($animal) . 'meta/' . join('/', explode(':', $page)) . '.changes';
-        $this->addRemoteChangelogRevision($remoteChangelog, $page, $rev, $ip, $type, $user, $sum, $extra);
+        $revisionsToAdjust = $this->addRemoteChangelogRevision($remoteChangelog, $rev, $changelogLine, $truncate);
+        sort($revisionsToAdjust);
+        foreach ($revisionsToAdjust as $revision) {
+            $this->replaceRemoteFile($this->getRemoteFilename($animal, $page, intval($revision)-1),io_readFile($this->getRemoteFilename($animal, $page, intval($revision))));
+        }
     }
 
-    public function addRemoteMediaChangelogRevision($animal, $medium, $rev, $ip, $type, $user, $sum="", $extra="") {
+    public function addRemoteMediaChangelogRevision($animal, $medium, $rev, $changelogLine, $truncate = true) {
         $remoteChangelog = $this->getAnimalDataDir($animal) . 'media_meta/' . join('/', explode(':', $medium)) . '.changes';
-        $this->addRemoteChangelogRevision($remoteChangelog, $medium, $rev, $ip, $type, $user, $sum, $extra);
+        $revisionsToAdjust = $this->addRemoteChangelogRevision($remoteChangelog, $rev, $changelogLine, $truncate);
+        sort($revisionsToAdjust);
+        foreach ($revisionsToAdjust as $revision) {
+            $this->replaceRemoteFile($this->getRemoteMediaFilename($animal, $medium, intval($revision)-1),io_readFile($this->getRemoteMediaFilename($animal, $medium, intval($revision))));
+        }
     }
 
-    public function addRemoteChangelogRevision($remoteChangelog, $document, $rev, $ip, $type, $user, $sum, $extra){
+    public function addRemoteChangelogRevision($remoteChangelog, $rev, $changelogLine, $truncate = true) {
         $lines = explode("\n",io_readFile($remoteChangelog));
         $lineindex = -1;
+        $revisionsToAdjust = array();
         foreach ($lines as $index => $line) {
             if (substr($line,0,10) == $rev) {
-                $lines = $this->freeChangelogRevision($lines, $rev);
+                $revisionsToAdjust = $this->freeChangelogRevision($lines, $rev);
                 $lineindex = $index;
                 break;
             }
@@ -168,13 +184,22 @@ class farm_util {
                 break;
             }
         }
-        array_splice($lines, $lineindex, 0, join("\t",array($rev, $ip, $type, $document, $user, $sum, $extra)));
+        array_splice($lines, $lineindex, $truncate ? count($lines) : 0, $changelogLine);
 
         $this->replaceRemoteFile($remoteChangelog, join("\n",$lines));
+        return $revisionsToAdjust;
 
     }
 
-    public function freeChangelogRevision($lines, $rev){
+    /**
+     * Modify the changelog so that the revision $rev does not have a changelog entry. However modifying the timestamps
+     * in the changelog only works if we move the attic revisions as well.
+     *
+     * @param  string[]  $lines the changelog lines. This array will be adjusted by this function
+     * @param  string    $rev   The timestamp which should not have an entry
+     * @return string[]         List of attic revisions that need to be moved 1s back in time
+     */
+    public function freeChangelogRevision(&$lines, $rev) {
         $lineToMakeFree = -1;
         foreach ($lines as $index => $line) {
             if (substr($line,0,10) == $rev){
@@ -182,17 +207,25 @@ class farm_util {
                 break;
             }
         }
-        if ($lineToMakeFree == -1) return $lines;
+        if ($lineToMakeFree == -1) return array();
 
-        do {
-            $parts = explode("\t",$lines[$lineToMakeFree]);
+
+        $i = 0;
+        $revisionsToAdjust = array();
+        while ($lineToMakeFree>0 && substr($lines[$lineToMakeFree-($i+1)],0,10) == $rev-($i+1)) {
+            $revisionsToAdjust[] = $rev-($i+1);
+            $i += 1;
+        }
+
+        for (; $i >= 0; $i -= 1) {
+            $parts = explode("\t",$lines[$lineToMakeFree-$i]);
             array_shift($parts);
-            array_unshift($parts,$rev+1);
-            $lines[$lineToMakeFree] = join("\t",$parts);
-            $lineToMakeFree += 1;
-            $rev += 1;
-        } while (substr($lines[$lineToMakeFree],0,10) == $rev);
-        return $lines;
+            array_unshift($parts,intval($rev)-$i);
+
+            $lines[$lineToMakeFree-$i] = join("\t",$parts);
+        }
+
+        return $revisionsToAdjust;
     }
 
     public function remoteMediaExists($animal, $medium, $timestamp = null) {
