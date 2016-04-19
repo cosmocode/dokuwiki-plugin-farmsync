@@ -1,5 +1,10 @@
 jQuery(function(){
     'use strict';
+
+    jQuery('a.show_noconflicts').click(function (event) {
+        jQuery(this).next('ul').toggle();
+    });
+
     jQuery('form button[name=theirs]').click(function(event){
         var animal = jQuery(this).parent('form').data('animal');
         var page = jQuery(this).parent('form').data('page');

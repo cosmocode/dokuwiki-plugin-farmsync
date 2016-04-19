@@ -6,12 +6,11 @@
  */
 
 // menu entry for admin plugins
-$lang['menu'] = 'Update pages and media in farm animals';
+$lang['menu'] = 'Farming-Updates';
 
-// custom language strings for the plugin
-// $lang['fixme'] = 'FIXME';
-
-$lang['heading:animals'] = 'Animals';
+$lang['heading:Update animals'] = 'Update pages and media in farm animals';
+$lang['legend:choose animals'] = 'Animals to update';
+$lang['legend:choose documents'] = 'Documents to update';
 $lang['label:PageEntry'] = 'Pages/Namespaces to update';
 $lang['label:MediaEntry'] = "Media/Media-Namespaces to update";
 
