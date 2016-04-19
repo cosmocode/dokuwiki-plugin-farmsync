@@ -106,14 +106,16 @@ class farm_util {
     }
 
     public function getRemoteFilename($animal, $document, $timestamp = null) {
-        global $conf;
+        global $conf, $cache_wikifn;
         $remoteDataDir = $this->getAnimalDataDir($animal);
         $source_datadir = $conf['datadir'];
         $conf['datadir'] = $remoteDataDir . 'pages';
         $source_olddir = $conf['olddir'];
         $conf['olddir'] = $remoteDataDir . 'attic';
 
+        unset($cache_wikifn[$document]);
         $FN = wikiFN($document, $timestamp);
+        unset($cache_wikifn[$document]);
 
         $conf['datadir'] = $source_datadir;
         $conf['olddir'] = $source_olddir;
