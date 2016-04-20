@@ -1,18 +1,26 @@
 jQuery(function(){
     'use strict';
 
-    jQuery('a.show_noconflicts').click(function (event) {
+    var $farmsync = jQuery('#plugin__farmsync');
+
+    $farmsync.find('a.show_noconflicts').click(function (event) {
         jQuery(this).next('ul').toggle();
     });
 
-    jQuery('form button[name=theirs]').click(function(event){
+    $farmsync.find('form button[name=diff]').click(function (event) {
+        event.stopPropagation();
+        event.preventDefault();
+        jQuery(this).closest('div.li').find('table.diff').toggle();
+    });
+
+    $farmsync.find('form button[name=theirs]').click(function(event){
         var animal = jQuery(this).parent('form').data('animal');
         var page = jQuery(this).parent('form').data('page');
         jQuery(this).replaceWith('<span>Done!</span>');
         jQuery('form[data-animal="' + animal + '"][data-page="' + page + '"] button').hide();
 
     });
-    jQuery('form button[name=override]').click(function(event) {
+    $farmsync.find('form button[name=override]').click(function(event) {
         event.stopPropagation();
         event.preventDefault();
         var $this = jQuery(this);
@@ -39,7 +47,7 @@ jQuery(function(){
         jQuery('form[data-animal="' + animal + '"][data-page="' + page + '"] button').hide();
     });
 
-    jQuery('form button[name=edit]').click(function(event) {
+    $farmsync.find('form button[name=edit]').click(function(event) {
         event.stopPropagation();
         event.preventDefault();
         var $form = jQuery(this).parent('form');
@@ -48,7 +56,7 @@ jQuery(function(){
         $form.find('button[name=save],button[name=cancel]').show();
     });
 
-    jQuery('form button[name=cancel]').click(function(event) {
+    $farmsync.find('form button[name=cancel]').click(function(event) {
         event.stopPropagation();
         event.preventDefault();
         var $form = jQuery(this).parent('form');
@@ -57,7 +65,7 @@ jQuery(function(){
         $form.find('button[name=save],button[name=cancel]').hide();
     });
 
-    jQuery('form button[name=save]').click(function(event) {
+    $farmsync.find('form button[name=save]').click(function(event) {
         event.stopPropagation();
         event.preventDefault();
         var $form = jQuery(this).parent('form');

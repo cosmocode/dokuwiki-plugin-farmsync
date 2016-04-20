@@ -1,0 +1,87 @@
+#plugin__farmsync {
+
+    .panelHeader {
+        background-color: #eee;
+        margin: 0;
+        padding: 10px 10px 8px;
+        overflow: hidden;
+        border-right: 1px solid @ini_border;
+        border-left: 1px solid @ini_border;
+    }
+
+    .panelMain,
+    .panelFooter {
+        padding: 1em;
+        border-right: 1px solid @ini_border;
+        border-left: 1px solid @ini_border;
+    }
+
+    .panelFooter {
+        border-bottom: 1px solid @ini_border;
+    }
+
+    form {
+        display: block;
+        text-align: center;
+
+        fieldset {
+            width: 80%;
+            padding: 1em;
+        }
+
+        label {
+            text-align: left;
+            display: block;
+            margin-bottom: 0.5em;
+
+            &:hover {
+                background-color: @ini_background_alt;
+            }
+
+            span {
+                display: inline-block;
+                width: 40%;
+            }
+        }
+
+        button {
+            margin: 1em;
+        }
+    }
+
+    #results {
+        div.result {
+            padding: 5px;
+            margin: 5px;
+            border-radius: 4px;
+
+            &.withconflicts {
+                background-color: #ffdfde;
+            }
+            &.noconflicts {
+                background-color: #cff9cf;
+            }
+
+            textarea {
+                width: 100%;
+                height: 40em;
+            }
+
+            a.show_noconflicts {
+                color: green;
+                font-weight: bold;
+                cursor: pointer;
+            }
+
+            ul.noconflicts {
+                display: none;
+            }
+
+            table.diff {
+                display: none;
+            }
+        }
+
+    }
+
+}

@@ -214,6 +214,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             $result->setMergeResult(new MergeResult(MergeResult::conflicts));
             $result->setConflictingBlocks($diff3->_conflictingBlocks);
             $result->setFinalText($final);
+            $result->setDiff(new \Diff(explode("\n", $remoteText), explode("\n", $localText)));
             $this->update_results[$animal]['pages']['failed'][] = $result;
             continue;
         }
@@ -343,6 +344,7 @@ class updateResults {
     private $_mergeResult;
     private $_animal;
     private $_page;
+    protected $helper;
     protected $_farm_util;
 
     /**
@@ -410,12 +412,23 @@ class updateResults {
         $this->_page = $page;
         $this->_animal = $animal;
         $this->_farm_util = new farm_util();
+
+        /** @var helper_plugin_farmsync helper */
+        $this->helper = plugin_load('helper','farmsync');
     }
 }
 
 class updateResultMergeConflict extends updateResults {
 
     private $_conflictingBlocks;
+
+    /** @var  Diff */
+    private $_diff;
+
+    public function setDiff(\Diff $diff) {
+        $this->_diff = $diff;
+    }
+
     /**
      * @return int
      */
@@ -437,14 +450,23 @@ class updateResultMergeConflict extends updateResults {
         $result = parent::getResultLine();
         $form = new Form();
         $form->attr('data-animal', $this->getAnimal())->attr("data-page",$this->getPage());
-        $form->addButton("theirs","Keep theirs");
-        $form->addButton("override","Overwrite theirs");
-        $form->addButton("edit","Edit");
+        $form->addButton("theirs",$this->helper->getLang('button:keep'));
+        $form->addButton("override",$this->helper->getLang('button:overwrite'));
+        $form->addButton("edit",$this->helper->getLang('button:edit'));
+        $form->addButton("diff",$this->helper->getLang('button:diff'));
         $form->addTextarea('editarea')->val($this->getFinalText())->attr("style","display:none;");
         $form->addTextarea('backup')->val($this->getFinalText())->attr("style","display:none;");
         $form->addButton("save","save")->attr("style","display:none;");
         $form->addButton("cancel","cancel")->attr("style","display:none;");
         $result .= $form->toHTML();
+        $diffformatter = new \TableDiffFormatter();
+        $result .=  '<table class="diff">';
+        $result .=  '<tr>';
+        $result .=  '<th colspan="2">'.$this->helper->getLang('diff:animal').'</th>';
+        $result .=  '<th colspan="2">'.$this->helper->getLang('diff:source').'</th>';
+        $result .=  '</tr>';
+        $result .=  $diffformatter->format($this->_diff);
+        $result .=  '</table>';
         return $result;
     }
 }
