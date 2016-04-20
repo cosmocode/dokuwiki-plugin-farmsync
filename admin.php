@@ -11,7 +11,7 @@ if(!defined('DOKU_INC')) die();
 require_once(DOKU_INC.'inc/DifferenceEngine.php');
 
 use dokuwiki\Form\Form;
-use plugin\farmsync\meta\farm_util;
+use dokuwiki\plugin\farmsync\meta\farm_util;
 
 class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
 

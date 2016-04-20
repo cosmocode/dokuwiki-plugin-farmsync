@@ -8,7 +8,7 @@
 
 if(!defined('DOKU_INC')) die();
 
-use plugin\farmsync\meta\farm_util;
+use dokuwiki\plugin\farmsync\meta\farm_util;
 
 class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
 

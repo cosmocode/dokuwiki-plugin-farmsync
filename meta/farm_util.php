@@ -1,6 +1,6 @@
 <?php
 
-namespace plugin\farmsync\meta;
+namespace dokuwiki\plugin\farmsync\meta;
 
 class farm_util {
 
