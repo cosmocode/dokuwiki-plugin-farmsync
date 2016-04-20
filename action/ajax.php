@@ -51,6 +51,23 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
             $this->sendResponse(403,"Security-Token invalid!");
             return;
         }
+
+        if ($INPUT->has('farmsync-getdiff')) {
+            $remoteText = $this->farm_util->readRemotePage($animal, $page);
+            $localText = io_readFile(wikiFN($page));
+            $diff = new \Diff(explode("\n", $remoteText), explode("\n", $localText));
+            $diffformatter = new \TableDiffFormatter();
+            $result =  '<table class="diff">';
+            $result .=  '<tr>';
+            $result .=  '<th colspan="2">'.$this->getLang('diff:animal').'</th>';
+            $result .=  '<th colspan="2">'.$this->getLang('diff:source').'</th>';
+            $result .=  '</tr>';
+            $result .=  $diffformatter->format($diff);
+            $result .=  '</table>';
+            $this->sendResponse(200,$result);
+            return;
+        }
+
         if (!$INPUT->has('farmsync-content')) {
             if ($INPUT->bool('farmsync-ismedia')) {
                 $this->farm_util->saveRemoteMedia($animal, $page);
@@ -61,9 +78,12 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
             return;
         }
 
-        $content = $INPUT->str('farmsync-content');
-        $this->writeManualMerge($animal, $page, $content);
-        $this->sendResponse(200,"");
+        if ($INPUT->has('farmsync-content')) {
+            $content = $INPUT->str('farmsync-content');
+            $this->writeManualMerge($animal, $page, $content);
+            $this->sendResponse(200, "");
+        }
+        $this->sendResponse(400, "malformed request");
     }
 
     /**

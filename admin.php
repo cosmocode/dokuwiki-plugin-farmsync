@@ -206,11 +206,10 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 $this->update_results[$animal]['pages']['passed'][] = $result;
                 return;
             }
-            $result = new updateResultMergeConflict($page, $animal);
+            $result = new PageConflict($page, $animal);
             $result->setMergeResult(new MergeResult(MergeResult::conflicts));
             $result->setConflictingBlocks($diff3->_conflictingBlocks);
             $result->setFinalText($final);
-            $result->setDiff(new \Diff(explode("\n", $remoteText), explode("\n", $localText)));
             $this->update_results[$animal]['pages']['failed'][] = $result;
             return;
 
@@ -431,16 +430,9 @@ class updateResults {
     }
 }
 
-class updateResultMergeConflict extends updateResults {
+class PageConflict extends updateResults {
 
     private $_conflictingBlocks;
-
-    /** @var  Diff */
-    private $_diff;
-
-    public function setDiff(\Diff $diff) {
-        $this->_diff = $diff;
-    }
 
     /**
      * @return int
@@ -472,14 +464,6 @@ class updateResultMergeConflict extends updateResults {
         $form->addButton("save","save")->attr("style","display:none;");
         $form->addButton("cancel","cancel")->attr("style","display:none;");
         $result .= $form->toHTML();
-        $diffformatter = new \TableDiffFormatter();
-        $result .=  '<table class="diff">';
-        $result .=  '<tr>';
-        $result .=  '<th colspan="2">'.$this->helper->getLang('diff:animal').'</th>';
-        $result .=  '<th colspan="2">'.$this->helper->getLang('diff:source').'</th>';
-        $result .=  '</tr>';
-        $result .=  $diffformatter->format($this->_diff);
-        $result .=  '</table>';
         return $result;
     }
 }
@@ -491,13 +475,13 @@ class MediaConflict extends updateResults {
         $form->attrs(array('data-animal'=>$this->getAnimal(),"data-page" => $this->getPage(), "data-ismedia" => true));
 
         $sourcelink = $form->addTagOpen('a');
-        $sourcelink->attr('href',DOKU_URL."lib/exe/detail.php?media=".$this->getPage());
+        $sourcelink->attr('href',DOKU_URL."lib/exe/detail.php?media=".$this->getPage())->attr('target', '_blank');
         $form->addHTML('Source Version');
         $form->addTagClose('a');
 
         $animalbase = $this->_farm_util->getAnimalLink($this->getAnimal());
         $animallink = $form->addTagOpen('a');
-        $animallink->attr('href',"$animalbase/lib/exe/detail.php?media=".$this->getPage());
+        $animallink->attr('href',"$animalbase/lib/exe/detail.php?media=".$this->getPage())->attr('target', '_blank');
         $form->addHTML('Animal Version');
         $form->addTagClose('a');
 

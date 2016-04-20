@@ -17,7 +17,34 @@ jQuery(function(){
         // FIXME implement via AJAX
         event.stopPropagation();
         event.preventDefault();
-        jQuery(this).closest('div.li').find('table.diff').toggle();
+
+        if ( jQuery(this).closest('div.li').find('table.diff').length ) {
+            jQuery(this).closest('div.li').find('table.diff').toggle();
+            return;
+        }
+
+        var $this = jQuery(this);
+        var sectok = $this.parent('form').find('input[name="sectok"]').val();
+        var animal = $this.parent('form').data('animal');
+        var page = $this.parent('form').data('page');
+
+        jQuery.post(
+            DOKU_BASE + 'lib/exe/ajax.php',
+            {
+                call: 'plugin_farmsync',
+                'farmsync-animal': animal,
+                'farmsync-page': page,
+                'farmsync-action': 'diff',
+                'farmsync-getdiff': true,
+                'sectok': sectok
+            }
+        ).done(function (data, textStatus, jqXHR) {
+            $this.closest('div.li').append(data);
+            $this.closest('div.li').find('table.diff').show()
+        }).fail(function (jqXHR, textStatus, errorThrown) {
+            $this.closest('div.li').append('<span>Failure! ' + textStatus + ' ' + errorThrown + '</span>');
+            console.dir(jqXHR);
+        });
     });
 
     $farmsync.find('form button[name=theirs]').click(function(event){
