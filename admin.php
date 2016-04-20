@@ -42,15 +42,6 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
      * Should carry out any processing required by the plugin.
      */
     public function handle() {
-        global $INPUT;
-        if (!($INPUT->has('farmsync-animals') && $INPUT->has('farmsync'))) return;
-        $animals = array_keys($INPUT->arr('farmsync-animals'));
-        $options = $INPUT->arr('farmsync');
-        $textare_linebreak = "\r\n";
-        $pages = explode($textare_linebreak, $options['pages']);
-        $media = explode($textare_linebreak, $options['media']);
-        $this->updatePages($pages, $animals);
-        $this->updateMedia($media, $animals);
     }
 
     /**
@@ -64,8 +55,14 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             $pages = array_merge($pages, $this->getDocumentsFromLine($line));
         }
         array_unique($pages);
-        foreach ($pages as $page) {
-            $this->updatePage($page, $animals);
+        $total = count($animals);
+        $i = 0;
+        foreach ($animals as $animal) {
+            foreach ($pages as $page) {
+                $this->updatePage($page, $animal);
+            }
+            $i += 1;
+            echo "Pages of $animal($i/$total) are done</br>";
         }
     }
 
@@ -167,8 +164,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
      * @param string[] $animals
      * @return updateResults
      */
-    public function updatePage($page, $animals) {
-        foreach ($animals as $animal) {
+    public function updatePage($page, $animal) {
             $result = new updateResults($page, $animal);
             $localModTime = filemtime(wikiFN($page));
             $localText = io_readFile(wikiFN($page));
@@ -176,14 +172,14 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 $this->farm_util->saveRemotePage($animal, $page, $localText, $localModTime);
                 $result->setMergeResult(new MergeResult(MergeResult::newFile));
                 $this->update_results[$animal]['pages']['passed'][] = $result;
-                continue;
+                return;
             }
             $remoteModTime = $this->farm_util->getRemoteFilemtime($animal,$page);
             $remoteText = $this->farm_util->readRemotePage($animal, $page);
             if ($remoteModTime == $localModTime && $remoteText == $localText) {
                 $result->setMergeResult(new MergeResult(MergeResult::unchanged));
                 $this->update_results[$animal]['pages']['passed'][] = $result;
-                continue;
+                return;
             }
 
             $localArchiveText = io_readFile(wikiFN($page, $remoteModTime));
@@ -191,24 +187,24 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 $this->farm_util->saveRemotePage($animal, $page, $localText, $localModTime);
                 $result->setMergeResult(new MergeResult(MergeResult::fileOverwritten));
                 $this->update_results[$animal]['pages']['passed'][] = $result;
-                continue;
+                return;
             }
 
             // We have to merge
             $commonroot = $this->farm_util->findCommonAncestor($page, $animal);
             $diff3 = new \Diff3(explode("\n", $commonroot), explode("\n", $remoteText), explode("\n", $localText));
-            $final = join("\n", $diff3->mergedOutput());
+            $final = join("\n", $diff3->mergedOutput('<<<<<<<'));
             if ($final == $remoteText) {
                 $result->setMergeResult(new MergeResult(MergeResult::unchanged));
                 $this->update_results[$animal]['pages']['passed'][] = $result;
-                continue;
+                return;
             }
             if (!$diff3->_conflictingBlocks) {
                 $this->farm_util->saveRemotePage($animal, $page, $final);
                 $result->setFinalText($final);
                 $result->setMergeResult(new MergeResult(MergeResult::mergedWithoutConflicts));
                 $this->update_results[$animal]['pages']['passed'][] = $result;
-                continue;
+                return;
             }
             $result = new updateResultMergeConflict($page, $animal);
             $result->setMergeResult(new MergeResult(MergeResult::conflicts));
@@ -216,15 +212,16 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             $result->setFinalText($final);
             $result->setDiff(new \Diff(explode("\n", $remoteText), explode("\n", $localText)));
             $this->update_results[$animal]['pages']['failed'][] = $result;
-            continue;
-        }
+            return;
+
     }
 
     /**
      * Render HTML output, e.g. helpful text and a form
      */
     public function html() {
-        if (empty($this->update_results)) {
+        global $INPUT;
+        if (!($INPUT->has('farmsync-animals') && $INPUT->has('farmsync'))) {
             echo "<div id=\"plugin__farmsync\">";
             echo '<h1>' . $this->getLang('heading:Update animals') . '</h1>';
             $form = new Form();
@@ -246,69 +243,85 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             echo "</div>";
             return;
         }
-        echo "<div id=\"plugin__farmsync\"><div id=\"results\">";
-        echo "<ul>";
-        /** @var updateResults $result */
-        foreach ($this->update_results as $animal => $results) {
-            if (!isset($results['pages']['failed'])) $results['pages']['failed'] = array();
-            if (!isset($results['media']['failed'])) $results['media']['failed'] = array();
-            if (!isset($results['pages']['passed'])) $results['pages']['passed'] = array();
-            if (!isset($results['media']['passed'])) $results['media']['passed'] = array();
-            $pageconflicts  = count($results['pages']['failed']);
-            $mediaconflicts = count($results['media']['failed']);
-            $pagesuccess    = count($results['pages']['passed']);
-            $mediasuccess   = count($results['media']['passed']);
-            if ($pageconflicts == 0 && $mediaconflicts == 0) {
-                $class = 'noconflicts';
-            } else {
-                $class = 'withconflicts';
-            }
-            echo "<div class='result $class'><h2><img src='" . DOKU_URL . "lib/tpl/dokuwiki/images/logo.png'></img> " . $animal . "</h2>";
-            echo "<h3>Pages</h3>";
-            echo "<ul>";
-
-            foreach ($results['pages']['failed'] as $result) {
-                echo "<li class='level1'>";
-                echo "<div class='li'>". $result->getResultLine() . "</div>";
-                echo "</li>";
-            }
-            echo "</ul>";
-
-            if ($pagesuccess > 0) {
-                echo "<a class='show_noconflicts'>Show pages without conflict</a>";
-            }
-            echo "<ul class='noconflicts'>";
-            foreach ($results['pages']['passed'] as $result) {
-                echo "<li class='level1'>";
-                echo "<div class='li'>". $result->getResultLine() . "</div>";
-                echo "</li>";
-            }
-            echo "</ul>";
-
-            echo "<h3>Media</h3>";
-            echo "<ul>";
-            foreach ($results['media']['failed'] as $result) {
-                echo "<li class='level1'>";
-                echo "<div class='li'>". $result->getResultLine() . "</div>";
-                echo "</li>";
-            }
-            echo "</ul>";
-
-            if ($mediasuccess > 0) {
-                echo "<a class='show_noconflicts'>Show media without conflict</a>";
-            }
-
-            echo "<ul class='noconflicts'>";
-            foreach ($results['media']['passed'] as $result) {
-                echo "<li class='level1'>";
-                echo "<div class='li'>". $result->getResultLine() . "</div>";
-                echo "</li>";
-            }
-            echo "</ul>";
+        else {
+            echo "<div id=\"plugin__farmsync\"><div id=\"results\">";
+            $animals = array_keys($INPUT->arr('farmsync-animals'));
+            $options = $INPUT->arr('farmsync');
+            $textare_linebreak = "\r\n";
+            $pages = explode($textare_linebreak, $options['pages']);
+            $media = explode($textare_linebreak, $options['media']);
+            echo "<div class='progress'>";
+            $this->updatePages($pages, $animals);
+            $this->updateMedia($media, $animals);
             echo "</div>";
+            echo "<h1>".$this->getLang('heading:Update done')."</h1>";
+            /** @var updateResults $result */
+            foreach ($this->update_results as $animal => $results) {
+                if (!isset($results['pages']['failed'])) $results['pages']['failed'] = array();
+                if (!isset($results['media']['failed'])) $results['media']['failed'] = array();
+                if (!isset($results['pages']['passed'])) $results['pages']['passed'] = array();
+                if (!isset($results['media']['passed'])) $results['media']['passed'] = array();
+                $pageconflicts = count($results['pages']['failed']);
+                $mediaconflicts = count($results['media']['failed']);
+                $pagesuccess = count($results['pages']['passed']);
+                $mediasuccess = count($results['media']['passed']);
+                if ($pageconflicts == 0 && $mediaconflicts == 0) {
+                    $class = 'noconflicts';
+                    $heading = sprintf($this->getLang('heading:animal noconflict'), $animal);
+                } else {
+                    $class = 'withconflicts';
+                    $heading = sprintf($this->getLang('heading:animal conflict'), $animal, $pageconflicts+$mediaconflicts);
+                }
+                echo "<div class='result $class'><h2><img src='" . DOKU_URL . "lib/tpl/dokuwiki/images/logo.png'></img> " . $heading . "</h2>";
+                echo "<div>";
+                echo "<h3>Pages</h3>";
+                if ($pageconflicts > 0) {
+                    echo "<ul>";
+                    foreach ($results['pages']['failed'] as $result) {
+                        echo "<li class='level1'>";
+                        echo "<div class='li'>" . $result->getResultLine() . "</div>";
+                        echo "</li>";
+                    }
+                    echo "</ul>";
+                }
+
+                if ($pagesuccess > 0) {
+                    echo "<a class='show_noconflicts'>Show pages without conflict</a>";
+                    echo "<ul class='noconflicts'>";
+                    foreach ($results['pages']['passed'] as $result) {
+                        echo "<li class='level1'>";
+                        echo "<div class='li'>" . $result->getResultLine() . "</div>";
+                        echo "</li>";
+                    }
+                    echo "</ul>";
+                }
+
+                echo "<h3>Media</h3>";
+                if ($mediaconflicts > 0) {
+                    echo "<ul>";
+                    foreach ($results['media']['failed'] as $result) {
+                        echo "<li class='level1'>";
+                        echo "<div class='li'>" . $result->getResultLine() . "</div>";
+                        echo "</li>";
+                    }
+                    echo "</ul>";
+                }
+
+                if ($mediasuccess > 0) {
+                    echo "<a class='show_noconflicts'>Show media without conflict</a>";
+                    echo "<ul class='noconflicts'>";
+                    foreach ($results['media']['passed'] as $result) {
+                        echo "<li class='level1'>";
+                        echo "<div class='li'>" . $result->getResultLine() . "</div>";
+                        echo "</li>";
+                    }
+                    echo "</ul>";
+                }
+                echo "</div>";
+                echo "</div>";
+            }
+            echo "</div></div>";
         }
-        echo "</ul>";
-        echo "</div></div>";
     }
 
 

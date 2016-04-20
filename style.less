@@ -60,6 +60,23 @@
             }
             &.noconflicts {
                 background-color: #cff9cf;
+
+                > div {
+                    display: none;
+
+                    ul.noconflicts {
+                        display: block;
+                    }
+                }
+            }
+
+            h2 {
+                margin-bottom: 0;
+                cursor: pointer;
+            }
+
+            h3 {
+                margin-top: 0.6em;
             }
 
             textarea {
@@ -71,6 +88,7 @@
                 color: green;
                 font-weight: bold;
                 cursor: pointer;
+                display: block;
             }
 
             ul.noconflicts {

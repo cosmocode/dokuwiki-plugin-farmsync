@@ -3,11 +3,18 @@ jQuery(function(){
 
     var $farmsync = jQuery('#plugin__farmsync');
 
+    $farmsync.find('div.progress').slideUp();
+
+    $farmsync.find('div.result h2').click(function (event) {
+        jQuery(this).next('div').slideToggle()
+    });
+
     $farmsync.find('a.show_noconflicts').click(function (event) {
-        jQuery(this).next('ul').toggle();
+        jQuery(this).next('ul').slideToggle();
     });
 
     $farmsync.find('form button[name=diff]').click(function (event) {
+        // FIXME implement via AJAX
         event.stopPropagation();
         event.preventDefault();
         jQuery(this).closest('div.li').find('table.diff').toggle();
