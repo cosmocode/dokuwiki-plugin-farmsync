@@ -48,11 +48,14 @@ jQuery(function(){
     });
 
     $farmsync.find('form button[name=theirs]').click(function(event){
-        var animal = jQuery(this).parent('form').data('animal');
-        var page = jQuery(this).parent('form').data('page');
-        jQuery(this).replaceWith('<span>Done!</span>');
+        var $this = jQuery(this);
+        var animal = $this.parent('form').data('animal');
+        var page = $this.parent('form').data('page');
+        var $conflicts = $this.closest('div.result').find('h2 span');
+        $conflicts.html(Number($conflicts.html()) - 1);
+        if (Number($conflicts.html()) === 0) $this.closest('div.result').switchClass('withconflicts','noconflicts');
+        $this.replaceWith('<span>Done!</span>');
         jQuery('form[data-animal="' + animal + '"][data-page="' + page + '"] button').hide();
-
     });
     $farmsync.find('form button[name=override]').click(function(event) {
         event.stopPropagation();
@@ -73,6 +76,9 @@ jQuery(function(){
                 'sectok': sectok
             }
         ).done(function (data, textStatus, jqXHR) {
+            var $conflicts = $this.closest('div.result').find('h2 span');
+            $conflicts.html(Number($conflicts.html()) - 1);
+            if (Number($conflicts.html()) === 0) $this.closest('div.result').switchClass('withconflicts','noconflicts');
             $this.replaceWith('<span>Done!</span>');
         }).fail(function (jqXHR, textStatus, errorThrown) {
             $this.replaceWith('<span>Failure! ' + textStatus + ' ' + errorThrown + '</span>');
@@ -116,10 +122,14 @@ jQuery(function(){
                 'farmsync-content': $form.find('textarea[name=editarea]').val(),
                 'sectok': sectok
             }
-        ).done(function () {
+        ).done(function (data, textStatus, jqXHR) {
+            var $conflicts = $form.closest('div.result').find('h2 span');
+            $conflicts.html(Number($conflicts.html()) - 1);
+            if (Number($conflicts.html()) === 0) $form.closest('div.result').switchClass('withconflicts','noconflicts');
             $form.replaceWith('<span>Done!</span>');
-        }).fail(function () {
-            $form.replaceWith('<span>Failure!</span>');
+        }).fail(function (jqXHR, textStatus, errorThrown) {
+            $form.replaceWith('<span>Failure! ' + textStatus + ' ' + errorThrown + '</span>');
+            console.dir(jqXHR);
         });
         $form.find('textarea[name=editarea]').hide();
         $form.find('button[name=save],button[name=cancel]').hide();

@@ -82,6 +82,7 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
             $content = $INPUT->str('farmsync-content');
             $this->writeManualMerge($animal, $page, $content);
             $this->sendResponse(200, "");
+            return;
         }
         $this->sendResponse(400, "malformed request");
     }
