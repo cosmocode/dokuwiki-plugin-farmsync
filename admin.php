@@ -464,11 +464,13 @@ class PageConflict extends updateResults {
         $form->addButton("override",$this->helper->getLang('button:overwrite'));
         $form->addButton("edit",$this->helper->getLang('button:edit'));
         $form->addButton("diff",$this->helper->getLang('button:diff'));
+        $form->addTagOpen('div')->addClass('editconflict');
         $form->addTagOpen('div')->attr("style","display:flex");
-        $form->addTextarea('editarea')->val($this->getFinalText())->attr("style","display:none;");
+        $form->addTextarea('editarea')->val($this->getFinalText());
         $form->addTagOpen('div')->addClass('conflictlist');
         $form->addHTML('<h4>'.$this->helper->getLang('heading:conflicts').'</h4>');
         $form->addHTML('<ul></ul>');
+        $form->addTagClose('div');
         $form->addTagClose('div');
         $form->addTagClose('div');
         $form->addTextarea('backup')->val($this->getFinalText())->attr("style","display:none;");

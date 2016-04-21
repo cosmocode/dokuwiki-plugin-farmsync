@@ -99,7 +99,7 @@ jQuery(function(){
         event.preventDefault();
         var $form = jQuery(this).parent('form');
         $form.find('button[name=theirs],button[name=override],button[name=edit]').hide();
-        $form.find('textarea[name=editarea]').show();
+        $form.find('div.editconflict').show();
         var lines = $form.find('textarea[name=editarea]').val().split("\n");
 
         var conflicts = [];
@@ -120,7 +120,8 @@ jQuery(function(){
         event.preventDefault();
         var $form = jQuery(this).parent('form');
         $form.find('button[name=theirs],button[name=override],button[name=edit]').show();
-        $form.find('textarea[name=editarea]').hide().val($form.find('textarea[name=backup]').val());
+        $form.find('div.editconflict').hide();
+        $form.find('textarea[name=editarea]').val($form.find('textarea[name=backup]').val());
         $form.find('button[name=save],button[name=cancel]').hide();
     });
 
