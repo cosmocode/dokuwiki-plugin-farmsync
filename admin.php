@@ -193,7 +193,12 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             // We have to merge
             $commonroot = $this->farm_util->findCommonAncestor($page, $animal);
             $diff3 = new \Diff3(explode("\n", $commonroot), explode("\n", $remoteText), explode("\n", $localText));
-            $final = join("\n", $diff3->mergedOutput('<<<<<<<'));
+
+            // prepare labels
+            $label1 = '✎———————————————————————————— '.$this->getLang('merge_animal').' ————';
+            $label3 = '✏———————————————————————————— '.$this->getLang('merge_source').' ————';
+            $label2 = '✐———————————————————————————————————————————————';
+            $final = join("\n", $diff3->mergedOutput($label1, $label2, $label3));
             if ($final == $remoteText) {
                 $result->setMergeResult(new MergeResult(MergeResult::unchanged));
                 $this->update_results[$animal]['pages']['passed'][] = $result;

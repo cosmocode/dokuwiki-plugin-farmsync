@@ -8,6 +8,9 @@
 // menu entry for admin plugins
 $lang['menu'] = 'Farming-Updates';
 
+$lang['merge_animal'] = 'The conflicting text in the animal.';
+$lang['merge_source'] = 'The conflicting text in the source.';
+
 $lang['heading:Update animals'] = 'Update pages and media in farm animals';
 $lang['heading:Update done'] = 'Finished updating the animals:';
 $lang['heading:animal noconflict'] = '%s updated without conflicts';
