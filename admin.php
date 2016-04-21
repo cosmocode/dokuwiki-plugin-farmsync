@@ -195,9 +195,9 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             $diff3 = new \Diff3(explode("\n", $commonroot), explode("\n", $remoteText), explode("\n", $localText));
 
             // prepare labels
-            $label1 = '✎———————————————————————————— '.$this->getLang('merge_animal').' ————';
-            $label3 = '✏———————————————————————————— '.$this->getLang('merge_source').' ————';
-            $label2 = '✐———————————————————————————————————————————————';
+            $label1 = '✎————————————————— '.$this->getLang('merge_animal').' ————';
+            $label3 = '✏————————————————— '.$this->getLang('merge_source').' ————';
+            $label2 = '✐————————————————————————————————————';
             $final = join("\n", $diff3->mergedOutput($label1, $label2, $label3));
             if ($final == $remoteText) {
                 $result->setMergeResult(new MergeResult(MergeResult::unchanged));
@@ -464,7 +464,13 @@ class PageConflict extends updateResults {
         $form->addButton("override",$this->helper->getLang('button:overwrite'));
         $form->addButton("edit",$this->helper->getLang('button:edit'));
         $form->addButton("diff",$this->helper->getLang('button:diff'));
+        $form->addTagOpen('div')->attr("style","display:flex");
         $form->addTextarea('editarea')->val($this->getFinalText())->attr("style","display:none;");
+        $form->addTagOpen('div')->addClass('conflictlist');
+        $form->addHTML('<h4>'.$this->helper->getLang('heading:conflicts').'</h4>');
+        $form->addHTML('<ul></ul>');
+        $form->addTagClose('div');
+        $form->addTagClose('div');
         $form->addTextarea('backup')->val($this->getFinalText())->attr("style","display:none;");
         $form->addButton("save","save")->attr("style","display:none;");
         $form->addButton("cancel","cancel")->attr("style","display:none;");

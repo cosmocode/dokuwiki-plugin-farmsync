@@ -87,6 +87,13 @@ jQuery(function(){
         jQuery('form[data-animal="' + animal + '"][data-page="' + page + '"] button').hide();
     });
 
+    var scrollToConflict = function ($event) {
+        var line = Number(jQuery(this).data('line'));
+        console.log(line);
+        var $form = jQuery(this).closest('form');
+        $form.find('textarea[name=editarea]').scrollToLine(line);
+    };
+
     $farmsync.find('form button[name=edit]').click(function(event) {
         event.stopPropagation();
         event.preventDefault();
@@ -96,12 +103,14 @@ jQuery(function(){
         var lines = $form.find('textarea[name=editarea]').val().split("\n");
 
         var conflicts = [];
+        $form.find('.conflictlist ul').html('');
         for (var index = 0; index < lines.length; index += 1) {
             if (lines[index].substring(0,'✎———————'.length) == '✎———————') {
                 conflicts.push(index);
+                var link = '<li class="conflict" data-line="'+index+'">'+lines[index+1].substring(0,20)+'...</li>';
+                $form.find('.conflictlist ul').append(jQuery(link).click(scrollToConflict));
             }
         }
-        var lineheight = parseInt($form.find('textarea[name=editarea]').css('line-height'),10);
         $form.find('textarea[name=editarea]').scrollToLine(conflicts[0]);
         $form.find('button[name=save],button[name=cancel]').show();
     });
