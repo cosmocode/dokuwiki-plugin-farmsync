@@ -350,6 +350,14 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             return $page;
         }
     }
+
+    /**
+     * @return array
+     */
+    public function getUpdateResults()
+    {
+        return $this->update_results;
+    }
 }
 
 /*

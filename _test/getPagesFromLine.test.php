@@ -1,9 +1,6 @@
 <?php
 
-namespace plugin\farmsync\test;
-
-// we don't have the auto loader here
-spl_autoload_register(array('action_plugin_farmsync_autoloader', 'autoloader'));
+namespace dokuwiki\plugin\farmsync\test;
 
 /**
  * @group plugin_farmsync

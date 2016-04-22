@@ -1,8 +1,8 @@
 <?php
 
-namespace plugin\farmsync\test\mock;
+namespace dokuwiki\plugin\farmsync\test\mock;
 
-class farm_util extends \plugin\farmsync\meta\farm_util {
+class farm_util extends \dokuwiki\plugin\farmsync\meta\farm_util {
 
     private $remoteData;
     public $receivedWriteCalls;
@@ -23,9 +23,13 @@ class farm_util extends \plugin\farmsync\meta\farm_util {
         $this->remoteData[$animal][$page]['exists'] = $exists;
     }
 
+    public function setAnimalDataDir($animal, $dir) {
+        $this->remoteData[$animal]['datadir'] = $dir;
+    }
+
     public function getAnimalDataDir($animal)
     {
-        return '/var/www/farm/' . $animal . '/data/';
+        return isset($this->remoteData[$animal]['datadir']) ? $this->remoteData[$animal]['datadir'] : '/var/www/farm/' . $animal . '/data/';
     }
 
 
@@ -49,9 +53,10 @@ class farm_util extends \plugin\farmsync\meta\farm_util {
 
     public function findCommonAncestor($page, $animal)
     {
-        if (!isset($this->remoteData[$animal][$page]['commonAncestor'])) throw new \Exception('commonAncestor unset in mock');
-        return $this->remoteData[$animal][$page]['commonAncestor'];
+        return isset($this->remoteData[$animal][$page]['commonAncestor']) ? $this->remoteData[$animal][$page]['commonAncestor'] : parent::findCommonAncestor($page, $animal);
     }
+
+
 
     public function saveRemotePage($animal, $page, $content, $timestamp = false)
     {

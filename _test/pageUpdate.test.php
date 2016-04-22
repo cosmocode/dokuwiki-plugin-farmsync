@@ -1,9 +1,6 @@
 <?php
 
-namespace plugin\farmsync\test;
-
-// we don't have the auto loader here
-spl_autoload_register(array('action_plugin_farmsync_autoloader', 'autoloader'));
+namespace dokuwiki\plugin\farmsync\test;
 
 /**
  * @group plugin_farmsync
@@ -25,8 +22,8 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
         $admin->farm_util = $mock_farm_util;
 
         // act
-        $admin->updatePage('test:page',array('testanimal'));
-        $updated_pages = $admin->getUpdatedPages();
+        $admin->updatePage('test:page','testanimal');
+        $updated_pages = $admin->getUpdateResults();
 
         // assert
         $this->assertEquals(count($mock_farm_util->receivedWriteCalls),0);
@@ -37,7 +34,7 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
             'content' => 'ABC',
             'timestamp' => 1400000000
         ),$mock_farm_util->receivedPageWriteCalls[0]);
-        $this->assertEquals($updated_pages[0]->getMergeResult(), \MergeResult::newFile);
+        $this->assertEquals($updated_pages['testanimal']['pages']['passed'][0]->getMergeResult(), \MergeResult::newFile);
     }
 
     public function test_updateAnimal_identicalFile() {
@@ -54,16 +51,19 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
 
 
         // act
-        $admin->updatePage('test:page',array('testanimal'));
-        $updated_pages = $admin->getUpdatedPages();
+        $admin->updatePage('test:page','testanimal');
+        $updated_pages = $admin->getUpdateResults();
 
         // assert
         $this->assertEquals(count($mock_farm_util->receivedWriteCalls),0);
         $this->assertEquals(count($mock_farm_util->receivedPageWriteCalls),0);
         $this->assertEquals(array(), $mock_farm_util->receivedWriteCalls);
-        $this->assertEquals($updated_pages[0]->getMergeResult(), \MergeResult::unchanged);
+        $this->assertEquals($updated_pages['testanimal']['pages']['passed'][0]->getMergeResult(), \MergeResult::unchanged);
     }
 
+    /**
+     * @group slow
+     */
     public function test_updateAnimal_remoteUnmodified() {
         // arrange
         saveWikiText('test:page_remoteUnmodified','ABC',"");
@@ -81,8 +81,8 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
 
 
         // act
-        $admin->updatePage('test:page_remoteUnmodified',array('testanimal'));
-        $updated_pages = $admin->getUpdatedPages();
+        $admin->updatePage('test:page_remoteUnmodified','testanimal');
+        $updated_pages = $admin->getUpdateResults();
 
         // assert
         $this->assertEquals(count($mock_farm_util->receivedWriteCalls),0);
@@ -93,7 +93,7 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
             'content' => 'ABCD',
             'timestamp' => $newrev
         ),$mock_farm_util->receivedPageWriteCalls[0]);
-        $this->assertEquals($updated_pages[0]->getMergeResult(), \MergeResult::fileOverwritten);
+        $this->assertEquals($updated_pages['testanimal']['pages']['passed'][0]->getMergeResult(), \MergeResult::fileOverwritten);
     }
 
 
@@ -112,14 +112,14 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
 
 
         // act
-        $admin->updatePage('test:page_nolocalChanges',array('testanimal'));
-        $updated_pages = $admin->getUpdatedPages();
+        $admin->updatePage('test:page_nolocalChanges','testanimal');
+        $updated_pages = $admin->getUpdateResults();
 
         // assert
         $this->assertEquals(count($mock_farm_util->receivedWriteCalls),0);
         $this->assertEquals(count($mock_farm_util->receivedPageWriteCalls),0);
         $this->assertEquals(array(), $mock_farm_util->receivedWriteCalls);
-        $this->assertEquals($updated_pages[0]->getMergeResult(), \MergeResult::unchanged);
+        $this->assertEquals($updated_pages['testanimal']['pages']['passed'][0]->getMergeResult(), \MergeResult::unchanged);
     }
 
     public function test_updateAnimal_successfulMerge() {
@@ -138,9 +138,9 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
 
 
         // act
-        $admin->updatePage($testpage,array('testanimal'));
+        $admin->updatePage($testpage,'testanimal');
         /** @var \updateResults[] $updated_pages */
-        $updated_pages = $admin->getUpdatedPages();
+        $updated_pages = $admin->getUpdateResults();
 
         // assert
         $this->assertEquals(count($mock_farm_util->receivedWriteCalls),0);
@@ -151,7 +151,7 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
             'content' => "ABCX\n\nDEFY\n",
             'timestamp' => null
         ),$mock_farm_util->receivedPageWriteCalls[0]);
-        $this->assertEquals($updated_pages[0]->getMergeResult(), \MergeResult::mergedWithoutConflicts);
+        $this->assertEquals($updated_pages['testanimal']['pages']['passed'][0]->getMergeResult(), \MergeResult::mergedWithoutConflicts);
     }
 
     public function test_updateAnimal_mergeConflicts() {
@@ -170,14 +170,14 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
 
 
         // act
-        $admin->updatePage($testpage,array('testanimal'));
+        $admin->updatePage($testpage,'testanimal');
         /** @var \updateResults[] $updated_pages */
-        $updated_pages = $admin->getUpdatedPages();
+        $updated_pages = $admin->getUpdateResults();
 
         // assert
         $this->assertEquals(count($mock_farm_util->receivedWriteCalls),0);
         $this->assertEquals(count($mock_farm_util->receivedPageWriteCalls),0);
-        $this->assertEquals($updated_pages[0]->getMergeResult(), \MergeResult::conflicts);
-        $this->assertEquals($updated_pages[0]->getFinalText(),"<<<<<<<\nABCY\n=======\nABCX\n>>>>>>>\n\nDEF\n");
+        $this->assertEquals($updated_pages['testanimal']['pages']['failed'][0]->getMergeResult(), \MergeResult::conflicts);
+        $this->assertEquals($updated_pages['testanimal']['pages']['failed'][0]->getFinalText(),"✎————————————————— The conflicting text in the animal. ————\nABCY\n✏————————————————— The conflicting text in the source. ————\nABCX\n✐————————————————————————————————————\n\nDEF\n");
     }
 }

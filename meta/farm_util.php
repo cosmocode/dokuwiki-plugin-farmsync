@@ -47,7 +47,7 @@ class farm_util {
         global $INPUT, $conf;
         if (!$timestamp) $timestamp = time();
         $changelogLine = join("\t",array($timestamp, clientIP(true), DOKU_CHANGE_TYPE_EDIT, $page, $INPUT->server->str('REMOTE_USER'), "Page updated from $conf[title] (".DOKU_URL.")"));
-        $this->addRemotePageChangelogRevision($animal, $page, $timestamp, $changelogLine);
+        $this->addRemotePageChangelogRevision($animal, $page, $changelogLine);
         $this->replaceRemoteFile($this->getRemoteFilename($animal, $page), $content, $timestamp);
         $this->replaceRemoteFile($this->getRemoteFilename($animal, $page, $timestamp), $content);
         // FIXME: update .meta ?
@@ -57,7 +57,7 @@ class farm_util {
         global $INPUT, $conf;
         $timestamp = filemtime(mediaFN($medium));
         $changelogLine = join("\t",array($timestamp, clientIP(true), DOKU_CHANGE_TYPE_EDIT, $medium, $INPUT->server->str('REMOTE_USER'), "Page updated from $conf[title] (".DOKU_URL.")"));
-        $this->addRemoteMediaChangelogRevision($animal, $medium, $timestamp, $changelogLine);
+        $this->addRemoteMediaChangelogRevision($animal, $medium, $changelogLine);
         $this->replaceRemoteFile($this->getRemoteMediaFilename($animal, $medium), io_readFile(mediaFN($medium), false), $timestamp);
         $this->replaceRemoteFile($this->getRemoteMediaFilename($animal, $medium, $timestamp), io_readFile(mediaFN($medium), false), $timestamp);
     }
@@ -123,8 +123,7 @@ class farm_util {
         return $FN;
     }
 
-    public function findCommonAncestor($page, $animal)
-    {
+    public function findCommonAncestor($page, $animal) {
         $remoteDataDir = $this->getAnimalDataDir($animal);
         $parts = explode(':',$page);
         $pageid = array_pop($parts);
@@ -141,10 +140,10 @@ class farm_util {
             if ($atticpageid == $pageid) $oldrevisions[] = $timestamp;
         }
         rsort($oldrevisions);
-        $changelog = new \PageChangelog($page);
+        $localMtime = filemtime(wikiFN($page));
         foreach ($oldrevisions as $rev) {
-            if (!$changelog->getRevisionInfo($rev)) continue;
-            $localArchiveText = io_readFile(wikiFN($page,$rev));
+            if (!file_exists(wikiFN($page, $rev)) && $rev != $localMtime) continue;
+            $localArchiveText = $rev == $localMtime ? io_readFile(wikiFN($page)) : io_readFile(wikiFN($page,$rev));
             $remoteArchiveText = io_readFile($this->getRemoteFilename($animal, $page, $rev));
             if ($localArchiveText == $remoteArchiveText) {
                 return $localArchiveText;
@@ -153,32 +152,49 @@ class farm_util {
         return "";
     }
 
-    public function addRemotePageChangelogRevision($animal, $page, $rev, $changelogLine, $truncate = true) {
+    /**
+     * @param string $animal
+     * @param string $page
+     * @param string $changelogLine
+     * @param bool   $truncate
+     * @throws \Exception
+     */
+    public function addRemotePageChangelogRevision($animal, $page, $changelogLine, $truncate = true) {
+        dbglog($changelogLine);
         $remoteChangelog = $this->getAnimalDataDir($animal) . 'meta/' . join('/', explode(':', $page)) . '.changes';
-        $revisionsToAdjust = $this->addRemoteChangelogRevision($remoteChangelog, $rev, $changelogLine, $truncate);
-        sort($revisionsToAdjust);
+        $revisionsToAdjust = $this->addRemoteChangelogRevision($remoteChangelog, $changelogLine, $truncate);
         foreach ($revisionsToAdjust as $revision) {
             $this->replaceRemoteFile($this->getRemoteFilename($animal, $page, intval($revision)-1),io_readFile($this->getRemoteFilename($animal, $page, intval($revision))));
         }
     }
 
-    public function addRemoteMediaChangelogRevision($animal, $medium, $rev, $changelogLine, $truncate = true) {
+    /**
+     * @param string $animal
+     * @param string $medium
+     * @param string $changelogLine
+     * @param bool   $truncate
+     * @throws \Exception
+     */
+    public function addRemoteMediaChangelogRevision($animal, $medium, $changelogLine, $truncate = true) {
         $remoteChangelog = $this->getAnimalDataDir($animal) . 'media_meta/' . join('/', explode(':', $medium)) . '.changes';
-        $revisionsToAdjust = $this->addRemoteChangelogRevision($remoteChangelog, $rev, $changelogLine, $truncate);
-        sort($revisionsToAdjust);
+        $revisionsToAdjust = $this->addRemoteChangelogRevision($remoteChangelog, $changelogLine, $truncate);
         foreach ($revisionsToAdjust as $revision) {
             $this->replaceRemoteFile($this->getRemoteMediaFilename($animal, $medium, intval($revision)-1),io_readFile($this->getRemoteMediaFilename($animal, $medium, intval($revision))));
         }
     }
 
-    public function addRemoteChangelogRevision($remoteChangelog, $rev, $changelogLine, $truncate = true) {
+    public function addRemoteChangelogRevision($remoteChangelog, $changelogLine, $truncate = true) {
+        $rev = substr($changelogLine,0,10);
+        if (!$this->isValidTimeStamp($rev)) {
+            throw new \Exception('2nd Argument must start with timestamp!');
+        };
         $lines = explode("\n",io_readFile($remoteChangelog));
-        $lineindex = -1;
+        $lineindex = count($lines);
         $revisionsToAdjust = array();
         foreach ($lines as $index => $line) {
             if (substr($line,0,10) == $rev) {
                 $revisionsToAdjust = $this->freeChangelogRevision($lines, $rev);
-                $lineindex = $index;
+                $lineindex = $index + 1;
                 break;
             }
             if (substr($line,0,10) > $rev) {
@@ -190,7 +206,19 @@ class farm_util {
 
         $this->replaceRemoteFile($remoteChangelog, join("\n",$lines));
         return $revisionsToAdjust;
+    }
 
+    /**
+     * taken from http://stackoverflow.com/questions/2524680/check-whether-the-string-is-a-unix-timestamp#2524761
+     *
+     * @param $timestamp
+     * @return bool
+     */
+    private function isValidTimeStamp($timestamp)
+    {
+        return ((string) (int) $timestamp === $timestamp)
+        && ($timestamp <= PHP_INT_MAX)
+        && ($timestamp >= ~PHP_INT_MAX);
     }
 
     /**
@@ -213,7 +241,7 @@ class farm_util {
 
 
         $i = 0;
-        $revisionsToAdjust = array();
+        $revisionsToAdjust = array($rev);
         while ($lineToMakeFree>0 && substr($lines[$lineToMakeFree-($i+1)],0,10) == $rev-($i+1)) {
             $revisionsToAdjust[] = $rev-($i+1);
             $i += 1;
@@ -222,11 +250,11 @@ class farm_util {
         for (; $i >= 0; $i -= 1) {
             $parts = explode("\t",$lines[$lineToMakeFree-$i]);
             array_shift($parts);
-            array_unshift($parts,intval($rev)-$i);
+            array_unshift($parts,intval($rev)-$i-1);
 
             $lines[$lineToMakeFree-$i] = join("\t",$parts);
         }
-
+        sort($revisionsToAdjust);
         return $revisionsToAdjust;
     }
 
