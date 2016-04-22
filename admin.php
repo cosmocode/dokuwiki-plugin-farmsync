@@ -256,6 +256,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             return;
         }
         else {
+            set_time_limit(0);
             $animals = array_keys($INPUT->arr('farmsync-animals'));
             $options = $INPUT->arr('farmsync');
             $textare_linebreak = "\r\n";
