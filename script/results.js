@@ -98,6 +98,31 @@ jQuery(function(){
         console.log(line);
         var $form = jQuery(this).closest('form');
         $form.find('textarea[name=editarea]').scrollToLine(line);
+        generateConflictLinks($form);
+    };
+
+    var scrollToFirstConflict = function (element) {
+        var $elem = jQuery(element);
+        var lines = $elem.closest('form').find('textarea[name=editarea]').val().split("\n");
+        for (var index = 0; index < lines.length; index += 1) {
+            if (lines[index].substring(0,'✎———————'.length) == '✎———————') {
+                $elem.scrollToLine(index);
+                break;
+            }
+        }
+    };
+
+    var generateConflictLinks = function ($form) {
+        var lines = $form.find('textarea[name=editarea]').val().split("\n");
+        var conflicts = [];
+        $form.find('.conflictlist ol').html('');
+        for (var index = 0; index < lines.length; index += 1) {
+            if (lines[index].substring(0,'✎———————'.length) == '✎———————') {
+                conflicts.push(index);
+                var link = jQuery('<li class="conflict" data-line="'+index+'"></li>').text(lines[index+1].substring(0,40)+'...');
+                $form.find('.conflictlist ol').append(link.click(scrollToConflict));
+            }
+        }
     };
 
     $farmsync.find('form button[name=edit]').click(function(event) {
@@ -106,17 +131,8 @@ jQuery(function(){
         var $form = jQuery(this).parent('form');
         $form.find('button[name=theirs],button[name=override],button[name=edit]').hide();
         $form.find('div.editconflict').show();
-        var lines = $form.find('textarea[name=editarea]').val().split("\n");
-        var conflicts = [];
-        $form.find('.conflictlist ul').html('');
-        for (var index = 0; index < lines.length; index += 1) {
-            if (lines[index].substring(0,'✎———————'.length) == '✎———————') {
-                conflicts.push(index);
-                var link = '<li class="conflict" data-line="'+index+'">'+lines[index+1].substring(0,20)+'...</li>';
-                $form.find('.conflictlist ul').append(jQuery(link).click(scrollToConflict));
-            }
-        }
-        $form.find('textarea[name=editarea]').scrollToLine(conflicts[0]);
+        generateConflictLinks($form);
+        scrollToFirstConflict($form.find('textarea[name=editarea]'));
         $form.find('button[name=save],button[name=cancel]').show();
     });
 
@@ -134,6 +150,12 @@ jQuery(function(){
         event.stopPropagation();
         event.preventDefault();
         var $form = jQuery(this).parent('form');
+        var $content = $form.find('textarea[name=editarea]').val();
+        if ($content.indexOf("✎———————") !== -1 ) {
+            scrollToFirstConflict($form.find('textarea[name=editarea]'));
+            alert('There are still unresolved conflicts left');
+            return;
+        }
         var animal = $form.data('animal');
         var page = $form.data('page');
         var sectok = $form.find('input[name="sectok"]').val();
@@ -146,7 +168,7 @@ jQuery(function(){
                 'farmsync-animal': animal,
                 'farmsync-page': page,
                 'farmsync-action': 'overwrite',
-                'farmsync-content': $form.find('textarea[name=editarea]').val(),
+                'farmsync-content': $content,
                 'sectok': sectok
             }
         ).done(function (data, textStatus, jqXHR) {

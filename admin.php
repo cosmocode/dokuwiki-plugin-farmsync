@@ -488,7 +488,7 @@ class PageConflict extends updateResults {
         $form->addTextarea('editarea')->val($this->getFinalText());
         $form->addTagOpen('div')->addClass('conflictlist');
         $form->addHTML('<h4>'.$this->helper->getLang('heading:conflicts').'</h4>');
-        $form->addHTML('<ul></ul>');
+        $form->addHTML('<ol></ol>');
         $form->addTagClose('div');
         $form->addTagClose('div');
         $form->addTagClose('div');

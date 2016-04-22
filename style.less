@@ -57,20 +57,10 @@
 
             &.withconflicts {
                 background-color: #ffdfde;
-                h2:hover {
+                h2:hover, li.conflict:hover {
                     background-color: #f0d0d0;
                 }
 
-                div.editconflict {
-                    display: none;
-                    textarea[name=editarea] {
-                        width: 80%;
-                    }
-                }
-
-                li.conflict {
-                    cursor: pointer;
-                }
             }
             &.noconflicts {
                 background-color: #cff9cf;
@@ -84,6 +74,17 @@
                     ul.noconflicts {
                         display: block;
                     }
+                }
+            }
+
+            div.editconflict {
+                display: none;
+                textarea[name=editarea] {
+                    width: 80%;
+                }
+
+                li.conflict {
+                    cursor: pointer;
                 }
             }
 
