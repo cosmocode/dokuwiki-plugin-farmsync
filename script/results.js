@@ -5,6 +5,8 @@ jQuery(function(){
 
     $farmsync.find('div.progress').slideUp();
 
+    $farmsync.find('select.make_chosen').chosen();
+
     $farmsync.find('div.result h2').click(function (event) {
         jQuery(this).next('div').slideToggle()
     });
@@ -27,11 +29,13 @@ jQuery(function(){
         var sectok = $this.parent('form').find('input[name="sectok"]').val();
         var animal = $this.parent('form').data('animal');
         var page = $this.parent('form').data('page');
+        var source = jQuery('#results').data('source');
 
         jQuery.post(
             DOKU_BASE + 'lib/exe/ajax.php',
             {
                 call: 'plugin_farmsync',
+                'farmsync-source': source,
                 'farmsync-animal': animal,
                 'farmsync-page': page,
                 'farmsync-action': 'diff',
@@ -65,10 +69,12 @@ jQuery(function(){
         var page = $this.parent('form').data('page');
         var ismedia = $this.parent('form').data('ismedia');
         var sectok = $this.parent('form').find('input[name="sectok"]').val();
+        var source = jQuery('#results').data('source');
         jQuery.post(
             DOKU_BASE + 'lib/exe/ajax.php',
             {
                 call: 'plugin_farmsync',
+                'farmsync-source': source,
                 'farmsync-animal': animal,
                 'farmsync-page': page,
                 'farmsync-action': 'overwrite',
@@ -101,7 +107,6 @@ jQuery(function(){
         $form.find('button[name=theirs],button[name=override],button[name=edit]').hide();
         $form.find('div.editconflict').show();
         var lines = $form.find('textarea[name=editarea]').val().split("\n");
-
         var conflicts = [];
         $form.find('.conflictlist ul').html('');
         for (var index = 0; index < lines.length; index += 1) {
@@ -132,10 +137,12 @@ jQuery(function(){
         var animal = $form.data('animal');
         var page = $form.data('page');
         var sectok = $form.find('input[name="sectok"]').val();
+        var source = jQuery('#results').data('source');
         jQuery.post(
             DOKU_BASE + 'lib/exe/ajax.php',
             {
                 call: 'plugin_farmsync',
+                'farmsync-source': source,
                 'farmsync-animal': animal,
                 'farmsync-page': page,
                 'farmsync-action': 'overwrite',

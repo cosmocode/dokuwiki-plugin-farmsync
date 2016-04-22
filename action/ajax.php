@@ -42,14 +42,24 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
         $event->preventDefault();
         $event->stopPropagation();
 
-        global $INPUT;
+        global $INPUT, $conf;
 
-        $animal = $INPUT->str('farmsync-animal');
-        $page = $INPUT->str('farmsync-page');
         $sectok = $INPUT->str('sectok');
         if (!checkSecurityToken($sectok)) {
             $this->sendResponse(403,"Security-Token invalid!");
             return;
+        }
+
+        $animal = $INPUT->str('farmsync-animal');
+        $page = $INPUT->str('farmsync-page');
+        $source = $INPUT->str('farmsync-source');
+
+        if($source !== 'Farmer') {
+            $sourcedir = $this->farm_util->getAnimalDataDir($source);
+            $conf['datadir'] = $sourcedir . 'pages/';
+            $conf['olddir'] = $sourcedir . 'attic/';
+            $conf['mediadir'] = $sourcedir . 'media/';
+            $conf['mediaolddir'] = $sourcedir . 'media_attic/';
         }
 
         if ($INPUT->has('farmsync-getdiff')) {

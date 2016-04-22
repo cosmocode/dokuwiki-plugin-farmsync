@@ -224,18 +224,22 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
      * Render HTML output, e.g. helpful text and a form
      */
     public function html() {
-        global $INPUT;
+        global $INPUT, $conf;
         if (!($INPUT->has('farmsync-animals') && $INPUT->has('farmsync'))) {
             echo "<div id=\"plugin__farmsync\">";
             echo '<h1>' . $this->getLang('heading:Update animals') . '</h1>';
+            $animals = $this->farm_util->getAllAnimals();
+            $sources = array_merge(array('Farmer'),$animals);
             $form = new Form();
+            $form->addFieldsetOpen($this->getLang('legend:choose source'));
+            $form->addDropdown('farmsync[source]',$sources, 'Source')->addClass('make_chosen');
+            $form->addFieldsetClose();
             $form->addFieldsetOpen($this->getLang('legend:choose documents'));
             $form->addTextarea('farmsync[pages]', $this->getLang('label:PageEntry'));
             $form->addHTML("<br>");
             $form->addTextarea('farmsync[media]', $this->getLang('label:MediaEntry'));
             $form->addFieldsetClose();
             $form->addFieldsetOpen($this->getLang('legend:choose animals'));
-            $animals = $this->farm_util->getAllAnimals();
             foreach ($animals as $animal) {
                 $form->addCheckbox('farmsync-animals[' . $animal . ']', $animal);
             }
@@ -248,12 +252,19 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             return;
         }
         else {
-            echo "<div id=\"plugin__farmsync\"><div id=\"results\">";
             $animals = array_keys($INPUT->arr('farmsync-animals'));
             $options = $INPUT->arr('farmsync');
             $textare_linebreak = "\r\n";
             $pages = explode($textare_linebreak, $options['pages']);
             $media = explode($textare_linebreak, $options['media']);
+            if($options['source'] !== 'Farmer') {
+                $sourcedir = $this->farm_util->getAnimalDataDir($options['source']);
+                $conf['datadir'] = $sourcedir . 'pages/';
+                $conf['olddir'] = $sourcedir . 'attic/';
+                $conf['mediadir'] = $sourcedir . 'media/';
+                $conf['mediaolddir'] = $sourcedir . 'media_attic/';
+            }
+            echo "<div id=\"plugin__farmsync\"><div id=\"results\" data-source='$options[source]'>";
             echo "<div class='progress'>";
             $this->updatePages($pages, $animals);
             $this->updateMedia($media, $animals);

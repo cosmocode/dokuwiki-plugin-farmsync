@@ -17,6 +17,7 @@ $lang['heading:animal noconflict'] = '%s updated without conflicts';
 $lang['heading:animal conflict'] = '%s has <span>%s</span> document(s) with conflicts';
 $lang['heading:conflicts'] = ' Conflicts:';
 
+$lang['legend:choose source'] = 'Source from which to update';
 $lang['legend:choose animals'] = 'Animals to update';
 $lang['legend:choose documents'] = 'Documents to update';
 
