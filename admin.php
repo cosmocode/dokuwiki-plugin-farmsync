@@ -102,6 +102,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
         if (substr($cleanline,-3) == ':**') {
             $nsfiles = array();
             search($nsfiles,$documentdir, $search_algo,array());
+            //$nsfiles = $this->getAllFiles(dirname(wikiFN($cleanline, null,false)));
             foreach ($nsfiles as $document) {
                 $documents[] = $namespace.':'.$document['id'];
             }
@@ -128,6 +129,59 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             $documents[] = cleanID($document);
         }
         return $documents;
+    }
+
+    /**
+     * This function is in large parts a copy of the core function search().
+     * However, as opposed to core- search(), this function will also return templates,
+     * i.e. files starting with an underscore character.
+     *
+     * $opts['depth']   recursion level, 0 for all
+     *
+     * @param   string $base Where to start the search.
+     * @param   string $dir Current directory beyond $base
+     * @param             $lvl
+     * @param             $opts
+     *
+     * @return array|bool
+     */
+    public function getAllFiles($base, $dir = '', $lvl = 0, $opts = array()) {
+        $dirs   = array();
+        $files  = array();
+        $items = array();
+        // dbglog($base . $dir);
+
+        // safeguard against runaways #1452
+        if($base == '' || $base == '/') {
+            throw new RuntimeException('No valid $base passed to search() - possible misconfiguration or bug');
+        }
+
+        //read in directories and files
+        $dh = @opendir($base.'/'.$dir);
+        if(!$dh) {
+            dbglog('cannot open dir ' . $base . $dir);
+            return array();
+        }
+        while(($file = readdir($dh)) !== false) {
+            if (preg_match('/^[\.]/', $file)) continue;
+            if (is_dir($base . '/' . $dir . '/' . $file)) {
+                $dirs[] = $dir . '/' . $file;
+                continue;
+            }
+            $files[] = $dir . '/' . $file;
+        }
+
+        foreach ($files as $file) {
+            //only search txt files
+            if(substr($file,-4) != '.txt') continue;
+            $items[] = pathID($file);
+        }
+
+        //give directories to userfunction then recurse
+        foreach($dirs as $sdir){
+            $items = array_merge($items, $this->getAllFiles($base,$sdir,$lvl+1,$opts));
+        }
+        return $items;
     }
 
     public function updateMedium($medium, $animals) {
