@@ -70,6 +70,14 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
         }
     }
 
+    function updateTemplates($pagelines, $animals) {
+        $templates = array();
+        foreach ($pagelines as $line) {
+            $templates = array_merge($templates, $this->getDocumentsFromLine($line, 'template'));
+        }
+        array_unique($templates);
+    }
+
     /**
      * @param string[] $medialines
      * @param string[] $animals
@@ -77,7 +85,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
     private function updateMedia($medialines, $animals) {
         $media = array();
         foreach ($medialines as $line) {
-            $media = array_merge($media, $this->getDocumentsFromLine($line, true));
+            $media = array_merge($media, $this->getDocumentsFromLine($line, 'media'));
         }
         array_unique($media);
         foreach ($media as $medium) {
@@ -87,46 +95,46 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
 
     /**
      * @param string $line
-     * @param bool   $ismedia
+     * @param string $type 'page' for pages, 'media' for media or 'template' for templates
      *
      * @return string[]
      */
-    public function getDocumentsFromLine($line, $ismedia = false) {
-        global $conf;
+    public function getDocumentsFromLine($line, $type = 'page') {
         if (trim($line) == '') return array();
         $cleanline = str_replace('/',':', $line);
         $namespace = join(':', explode(':',$cleanline, -1));
-        $documentdir = dirname($ismedia ? mediaFN($cleanline, null, false) : wikiFN($cleanline, null, false));
-        $search_algo = $ismedia ? 'search_media' : 'search_allpages';
+        $documentdir = dirname($type == 'media' ? mediaFN($cleanline, null, false) : wikiFN($cleanline, null, false));
+        $search_algo = $type == 'page' ? 'search_allpages' : ($type == 'media '? 'search_media' : '');
         $documents = array();
+
         if (substr($cleanline,-3) == ':**') {
             $nsfiles = array();
-            search($nsfiles,$documentdir, $search_algo,array());
-            //$nsfiles = $this->getAllFiles(dirname(wikiFN($cleanline, null,false)));
-            foreach ($nsfiles as $document) {
-                $documents[] = $namespace.':'.$document['id'];
-            }
+            $type != 'template' ? search($nsfiles,$documentdir, $search_algo,array()) : $nsfiles = $this->getTemplates($documentdir);
+            $documents = array_map(function($elem)use($namespace){return $namespace.':'.$elem['id'];},$nsfiles);
         } elseif (substr($cleanline,-2) == ':*') {
             $nsfiles = array();
-            search($nsfiles,$documentdir, $search_algo,array('depth' => 1));
-            foreach ($nsfiles as $document) {
-                $documents[] = $namespace.':'.$document['id'];
-            }
+            $type != 'template' ? search($nsfiles,$documentdir, $search_algo,array('depth' => 1)) : $nsfiles = $this->getTemplates($documentdir, null, null, array('depth' => 1));
+            $documents = array_map(function($elem)use($namespace){return $namespace.':'.$elem['id'];},$nsfiles);
         } else {
             $document = $cleanline;
-            if(!$ismedia && in_array(substr($document,-1), array(':', ';')) ||
-                ($conf['useslash'] && substr($document,-1) == '/')){
+            if ($type == 'page' && substr(noNS($document),0,1) == '_') return array();
+            if ($type == 'template' && substr(noNS($document),0,1) != '_') return array();
+            if ($type == 'page' && in_array(substr($document,-1), array(':', ';'))){
                 $document = $this->handleStartpage($document);
             }
-            if (!$ismedia && !page_exists($document)) {
+            if ($type == 'page' && !page_exists($document)) {
                 msg("Page $document does not exist in source wiki!",-1);
                 return array();
             }
-            if ($ismedia && (!file_exists(mediaFN($document)) || is_dir(mediaFN($document)))) {
+            if ($type == 'template' && !page_exists($document, null, false)) {
+                msg("Template $document does not exist in source wiki!",-1);
+                return array();
+            }
+            if ($type == 'media' && (!file_exists(mediaFN($document)) || is_dir(mediaFN($document)))) {
                 msg("Media-file $document does not exist in source wiki!",-1);
                 return array();
             }
-            $documents[] = cleanID($document);
+            $documents[] = $type != 'template' ? cleanID($document) : $document;
         }
         return $documents;
     }
@@ -145,11 +153,10 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
      *
      * @return array|bool
      */
-    public function getAllFiles($base, $dir = '', $lvl = 0, $opts = array()) {
+    public function getTemplates($base, $dir = '', $lvl = 0, $opts = array()) {
         $dirs   = array();
         $files  = array();
         $items = array();
-        // dbglog($base . $dir);
 
         // safeguard against runaways #1452
         if($base == '' || $base == '/') {
@@ -168,18 +175,18 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 $dirs[] = $dir . '/' . $file;
                 continue;
             }
+            if (substr($file, 0, 1) !== '_') continue;
             $files[] = $dir . '/' . $file;
         }
 
         foreach ($files as $file) {
             //only search txt files
             if(substr($file,-4) != '.txt') continue;
-            $items[] = pathID($file);
+            $items[] = array('id' => pathID($file));
         }
 
-        //give directories to userfunction then recurse
         foreach($dirs as $sdir){
-            $items = array_merge($items, $this->getAllFiles($base,$sdir,$lvl+1,$opts));
+            $items = array_merge($items, $this->getTemplates($base,$sdir,$lvl+1,$opts));
         }
         return $items;
     }
@@ -326,6 +333,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             echo "<div id=\"plugin__farmsync\"><div id=\"results\" data-source='$options[source]'>";
             echo "<div class='progress'>";
             $this->updatePages($pages, $animals);
+            $this->updateTemplates($pages, $animals);
             $this->updateMedia($media, $animals);
             echo "</div>";
             echo "<h1>".$this->getLang('heading:Update done')."</h1>";
@@ -414,7 +422,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             $page = $page . noNS(cleanID($page));
             return $page;
         } elseif (page_exists($page)) {
-            return $page;
+            return cleanID($page);
         } else {
             $page = $page . $conf['start'];
             return $page;
