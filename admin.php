@@ -220,7 +220,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             return;
         }
         $remoteModTime = $this->farm_util->getRemoteFilemtime($animal,$template, false, false);
-        if ($remoteModTime == $localModTime && io_readFile(wikiFN($template, null, false)) == $this->farm_util->readRemoteFile($remoteFN)) {
+        if (io_readFile(wikiFN($template, null, false)) == $this->farm_util->readRemoteFile($remoteFN)) {
             $result->setMergeResult(new MergeResult(MergeResult::unchanged));
             $this->update_results[$animal]['templates']['passed'][] = $result;
             return;
