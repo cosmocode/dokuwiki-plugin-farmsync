@@ -19,7 +19,6 @@ jQuery(function(){
     });
 
     $farmsync.find('form button[name=diff]').click(function (event) {
-        // FIXME implement via AJAX
         event.stopPropagation();
         event.preventDefault();
 
@@ -70,7 +69,7 @@ jQuery(function(){
         var $this = jQuery(this);
         var animal = $this.parent('form').data('animal');
         var page = $this.parent('form').data('page');
-        var ismedia = $this.parent('form').data('ismedia');
+        var type = $this.parent('form').data('type') || 'page';
         var sectok = $this.parent('form').find('input[name="sectok"]').val();
         var source = jQuery('#results').data('source');
         jQuery.post(
@@ -81,7 +80,7 @@ jQuery(function(){
                 'farmsync-animal': animal,
                 'farmsync-page': page,
                 'farmsync-action': 'overwrite',
-                'farmsync-ismedia': ismedia,
+                'farmsync-ismedia': type,
                 'sectok': sectok
             }
         ).done(function (data, textStatus, jqXHR) {

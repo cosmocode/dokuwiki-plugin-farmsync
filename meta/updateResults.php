@@ -134,7 +134,7 @@ class MediaConflict extends updateResults {
     public function getResultLine() {
         $result = parent::getResultLine();
         $form = new Form();
-        $form->attrs(array('data-animal'=>$this->getAnimal(),"data-page" => $this->getPage(), "data-ismedia" => true));
+        $form->attrs(array('data-animal'=>$this->getAnimal(),"data-page" => $this->getPage(), "data-type" => 'media'));
 
         $sourcelink = $form->addTagOpen('a');
         $sourcelink->attr('href',DOKU_URL."lib/exe/detail.php?media=".$this->getPage())->attr('target', '_blank');
@@ -160,7 +160,7 @@ class TemplateConflict extends updateResults {
     public function getResultLine() {
         $result = parent::getResultLine();
         $form = new Form();
-        $form->attrs(array('data-animal'=>$this->getAnimal(),"data-page" => $this->getPage(), "data-ismedia" => false));
+        $form->attrs(array('data-animal'=>$this->getAnimal(),"data-page" => $this->getPage(), "data-type" => 'template'));
 
         $form->addButton("theirs",$this->helper->getLang('button:keep'));
         $form->addButton("override",$this->helper->getLang('button:overwrite'));

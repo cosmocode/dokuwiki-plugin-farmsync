@@ -79,10 +79,15 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
         }
 
         if (!$INPUT->has('farmsync-content')) {
-            if ($INPUT->bool('farmsync-ismedia')) {
+            if ($INPUT->str('farmsync-type') == 'media') {
                 $this->farm_util->saveRemoteMedia($animal, $page);
-            } else {
+            } elseif ($INPUT->str('farmsync-type') == 'page') {
                 $this->overwriteRemotePage($animal, $page);
+            } else {
+                $remoteFN = $this->farm_util->getRemoteFilename($animal,$page, null, false);
+                $localFN = wikiFN($page, null, false);
+
+                $this->farm_util->replaceRemoteFile($remoteFN, io_readFile($localFN), filemtime($localFN));
             }
             $this->sendResponse(200,"");
             return;
