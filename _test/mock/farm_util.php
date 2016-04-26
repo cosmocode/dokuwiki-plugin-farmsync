@@ -33,7 +33,7 @@ class farm_util extends \dokuwiki\plugin\farmsync\meta\farm_util {
     }
 
 
-    public function remotePageExists($animal, $page)
+    public function remotePageExists($animal, $page, $clean = true)
     {
         return $this->remoteData[$animal][$page]['exists'];
     }
@@ -74,7 +74,7 @@ class farm_util extends \dokuwiki\plugin\farmsync\meta\farm_util {
     }
 
 
-    public function getRemoteFilemtime($animal, $page, $ismedia = false)
+    public function getRemoteFilemtime($animal, $page, $ismedia = false, $clean = true)
     {
         return $this->remoteData[$animal][$page]['mtime'];
     }
@@ -84,7 +84,7 @@ class farm_util extends \dokuwiki\plugin\farmsync\meta\farm_util {
         $this->remoteData[$animal][$page]['content'] = $content;
     }
 
-    public function readRemotePage($animal, $page)
+    public function readRemotePage($animal, $page, $clean = true)
     {
         return $this->remoteData[$animal][$page]['content'];
     }

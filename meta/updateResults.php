@@ -134,7 +134,7 @@ class MediaConflict extends updateResults {
     public function getResultLine() {
         $result = parent::getResultLine();
         $form = new Form();
-        $form->attrs(array('data-animal'=>$this->getAnimal(),"data-page" => $this->getPage(), "data-ismedia" => true));
+        $form->attrs(array('data-animal'=>$this->getAnimal(),"data-page" => $this->getPage(), "data-type" => 'media'));
 
         $sourcelink = $form->addTagOpen('a');
         $sourcelink->attr('href',DOKU_URL."lib/exe/detail.php?media=".$this->getPage())->attr('target', '_blank');
@@ -147,8 +147,24 @@ class MediaConflict extends updateResults {
         $form->addHTML('Animal Version');
         $form->addTagClose('a');
 
-        $form->addButton("theirs","Keep theirs");
-        $form->addButton("override","Overwrite theirs");
+        $form->addButton("theirs",$this->helper->getLang('button:keep'));
+        $form->addButton("override",$this->helper->getLang('button:overwrite'));
+
+        $result .= $form->toHTML();
+        return $result;
+    }
+}
+
+
+class TemplateConflict extends updateResults {
+    public function getResultLine() {
+        $result = parent::getResultLine();
+        $form = new Form();
+        $form->attrs(array('data-animal'=>$this->getAnimal(),"data-page" => $this->getPage(), "data-type" => 'template'));
+
+        $form->addButton("theirs",$this->helper->getLang('button:keep'));
+        $form->addButton("override",$this->helper->getLang('button:overwrite'));
+        $form->addButton("diff",$this->helper->getLang('button:diff'));
 
         $result .= $form->toHTML();
         return $result;
