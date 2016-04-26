@@ -220,6 +220,21 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         $this->assertEquals(0, count($MSG));
     }
 
+    public function test_getPagesFromLine_template_ns_deep() {
+        // arrange
+        /** @var \admin_plugin_farmsync $admin */
+        $admin = plugin_load('admin','farmsync');
+        file_put_contents(wikiFN('wiki:_template', null, false), 'text');
+
+        // act
+        $actual_result = $admin->getDocumentsFromLine(':**', 'template');
+
+        // assert
+        global $MSG;
+        $this->assertEquals(array(':wiki:_template'), $actual_result);
+        $this->assertEquals(0, count($MSG));
+    }
+
     public function test_getPagesFromLine_media_ns() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
