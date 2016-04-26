@@ -378,6 +378,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 $conf['mediaolddir'] = $sourcedir . 'media_attic/';
             }
             echo "<div id=\"plugin__farmsync\"><div id=\"results\" data-source='$options[source]'>";
+            echo "<span class='progress'>Progress and Errors</span>";
             echo "<div class='progress'>";
             $this->updatePages($pages, $animals);
             $this->updateTemplates($pages, $animals);

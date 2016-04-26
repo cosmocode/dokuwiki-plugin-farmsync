@@ -4,6 +4,9 @@ jQuery(function(){
     var $farmsync = jQuery('#plugin__farmsync');
 
     $farmsync.find('div.progress').slideUp();
+    $farmsync.find('span.progress').click(function() {
+        $farmsync.find('div.progress').slideToggle();
+    });
 
     $farmsync.find('select.make_chosen').chosen();
 
