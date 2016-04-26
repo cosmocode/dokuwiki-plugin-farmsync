@@ -62,8 +62,8 @@ class farm_util {
         $this->replaceRemoteFile($this->getRemoteMediaFilename($animal, $medium, $timestamp), io_readFile(mediaFN($medium), false), $timestamp);
     }
 
-    public function readRemotePage($animal, $page) {
-        return io_readFile($this->getRemoteFilename($animal, $page));
+    public function readRemotePage($animal, $page, $clean = true) {
+        return io_readFile($this->getRemoteFilename($animal, $page, null, $clean));
     }
 
     public function readRemoteMedia($animal, $medium, $timestamp = null) {
@@ -76,17 +76,20 @@ class farm_util {
 
     /**
      * @param string $animal
-     * @param string $document   Either the page-id or the media-id, colon-separated
+     * @param string $document Either the page-id or the media-id, colon-separated
      * @param bool   $ismedia
+     * @param bool   $clean    For pages only: define if the pageid should be cleaned
      * @return mixed
      */
-    public function getRemoteFilemtime($animal, $document, $ismedia = false) {
-        if ($ismedia) return filemtime($this->getRemoteMediaFilename($animal, $document));
-        return filemtime($this->getRemoteFilename($animal, $document));
+    public function getRemoteFilemtime($animal, $document, $ismedia = false, $clean = true) {
+        if ($ismedia) {
+            return filemtime($this->getRemoteMediaFilename($animal, $document));
+        }
+        return filemtime($this->getRemoteFilename($animal, $document, null, $clean));
     }
 
-    public function remotePageExists($animal, $page) {
-        return file_exists($this->getRemoteFilename($animal, $page));
+    public function remotePageExists($animal, $page, $clean = true) {
+        return file_exists($this->getRemoteFilename($animal, $page, null, $clean));
     }
 
     public function getRemoteMediaFilename($animal, $medium, $timestamp = null) {
@@ -105,17 +108,27 @@ class farm_util {
         return $mediaFN;
     }
 
-    public function getRemoteFilename($animal, $document, $timestamp = null) {
+    /**
+     * Get the filename of a page at an animal
+     *
+     * @param string      $animal     the animal
+     * @param string      $document   the full pageid
+     * @param string|null $timestamp  set to get a version in the attic
+     * @param bool        $clean      Should the pageid be cleaned?
+     * @return mixed
+     */
+    public function getRemoteFilename($animal, $document, $timestamp = null, $clean = true) {
         global $conf, $cache_wikifn;
         $remoteDataDir = $this->getAnimalDataDir($animal);
+
         $source_datadir = $conf['datadir'];
         $conf['datadir'] = $remoteDataDir . 'pages';
         $source_olddir = $conf['olddir'];
         $conf['olddir'] = $remoteDataDir . 'attic';
 
-        unset($cache_wikifn[$document]);
-        $FN = wikiFN($document, $timestamp);
-        unset($cache_wikifn[$document]);
+        unset($cache_wikifn[str_replace(':','/',$document)]);
+        $FN = wikiFN($document, $timestamp, $clean);
+        unset($cache_wikifn[str_replace(':','/',$document)]);
 
         $conf['datadir'] = $source_datadir;
         $conf['olddir'] = $source_olddir;

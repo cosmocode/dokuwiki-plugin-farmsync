@@ -15,6 +15,7 @@ use dokuwiki\plugin\farmsync\meta\farm_util;
 use dokuwiki\plugin\farmsync\meta\updateResults;
 use dokuwiki\plugin\farmsync\meta\PageConflict;
 use dokuwiki\plugin\farmsync\meta\MediaConflict;
+use dokuwiki\plugin\farmsync\meta\TemplateConflict;
 use dokuwiki\plugin\farmsync\meta\MergeResult;
 
 class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
@@ -78,6 +79,13 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
         array_unique($templates);
         $total = count($animals);
         $i = 0;
+        foreach ($animals as $animal) {
+            foreach ($templates as $template) {
+                $this->updateTemplate($template, $animal);
+            }
+            $i += 1;
+            echo "Templates of $animal($i/$total) are done</br>";
+        }
     }
 
     /**
@@ -197,6 +205,37 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             $items = array_merge($items, $this->getTemplates($base,$sdir,$lvl+1,$opts));
         }
         return $items;
+    }
+
+    public function updateTemplate($template, $animal) {
+        $localModTime = filemtime(wikiFN($template, null, false));
+        $result = new updateResults($template, $animal);
+
+        $remoteFN = $this->farm_util->getRemoteFilename($animal, $template, null, false);
+
+        if(!$this->farm_util->remotePageExists($animal, $template, false)) {
+            $this->farm_util->replaceRemoteFile($remoteFN,io_readFile(wikiFN($template, null, false)), $localModTime);
+            $result->setMergeResult(new MergeResult(MergeResult::newFile));
+            $this->update_results[$animal]['templates']['passed'][] = $result;
+            return;
+        }
+        $remoteModTime = $this->farm_util->getRemoteFilemtime($animal,$template, false, false);
+        if ($remoteModTime == $localModTime && io_readFile(wikiFN($template, null, false)) == $this->farm_util->readRemoteFile($remoteFN)) {
+            $result->setMergeResult(new MergeResult(MergeResult::unchanged));
+            $this->update_results[$animal]['templates']['passed'][] = $result;
+            return;
+        }
+        if ($remoteModTime < $localModTime) {
+            $this->farm_util->replaceRemoteFile($remoteFN,io_readFile(wikiFN($template, null, false)), $localModTime);
+            $result->setMergeResult(new MergeResult(MergeResult::fileOverwritten));
+            $this->update_results[$animal]['templates']['passed'][] = $result;
+            return;
+        }
+        $result = new TemplateConflict($template, $animal);
+        $result->setMergeResult(new MergeResult(MergeResult::conflicts));
+        $this->update_results[$animal]['templates']['failed'][] = $result;
+
+
     }
 
     public function updateMedium($medium, $animal) {
@@ -349,18 +388,22 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             foreach ($this->update_results as $animal => $results) {
                 if (!isset($results['pages']['failed'])) $results['pages']['failed'] = array();
                 if (!isset($results['media']['failed'])) $results['media']['failed'] = array();
+                if (!isset($results['templates']['failed'])) $results['templates']['failed'] = array();
                 if (!isset($results['pages']['passed'])) $results['pages']['passed'] = array();
                 if (!isset($results['media']['passed'])) $results['media']['passed'] = array();
+                if (!isset($results['templates']['passed'])) $results['templates']['passed'] = array();
                 $pageconflicts = count($results['pages']['failed']);
                 $mediaconflicts = count($results['media']['failed']);
+                $templateconflicts = count($results['templates']['failed']);
                 $pagesuccess = count($results['pages']['passed']);
                 $mediasuccess = count($results['media']['passed']);
-                if ($pageconflicts == 0 && $mediaconflicts == 0) {
+                $templatesuccess = count($results['templates']['passed']);
+                if ($pageconflicts == 0 && $mediaconflicts == 0 && $templateconflicts == 0) {
                     $class = 'noconflicts';
                     $heading = sprintf($this->getLang('heading:animal noconflict'), $animal);
                 } else {
                     $class = 'withconflicts';
-                    $heading = sprintf($this->getLang('heading:animal conflict'), $animal, $pageconflicts+$mediaconflicts);
+                    $heading = sprintf($this->getLang('heading:animal conflict'), $animal, $pageconflicts+$mediaconflicts+$templateconflicts);
                 }
                 echo "<div class='result $class'><h2><img src='" . DOKU_URL . "lib/tpl/dokuwiki/images/logo.png'></img> " . $heading . "</h2>";
                 echo "<div>";
@@ -379,6 +422,28 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                     echo "<a class='show_noconflicts'>Show pages without conflict</a>";
                     echo "<ul class='noconflicts'>";
                     foreach ($results['pages']['passed'] as $result) {
+                        echo "<li class='level1'>";
+                        echo "<div class='li'>" . $result->getResultLine() . "</div>";
+                        echo "</li>";
+                    }
+                    echo "</ul>";
+                }
+
+                echo "<h3>Templates</h3>";
+                if ($templateconflicts > 0) {
+                    echo "<ul>";
+                    foreach ($results['templates']['failed'] as $result) {
+                        echo "<li class='level1'>";
+                        echo "<div class='li'>" . $result->getResultLine() . "</div>";
+                        echo "</li>";
+                    }
+                    echo "</ul>";
+                }
+
+                if ($templatesuccess > 0) {
+                    echo "<a class='show_noconflicts'>Show templates without conflict</a>";
+                    echo "<ul class='noconflicts'>";
+                    foreach ($results['templates']['passed'] as $result) {
                         echo "<li class='level1'>";
                         echo "<div class='li'>" . $result->getResultLine() . "</div>";
                         echo "</li>";

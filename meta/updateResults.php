@@ -147,8 +147,24 @@ class MediaConflict extends updateResults {
         $form->addHTML('Animal Version');
         $form->addTagClose('a');
 
-        $form->addButton("theirs","Keep theirs");
-        $form->addButton("override","Overwrite theirs");
+        $form->addButton("theirs",$this->helper->getLang('button:keep'));
+        $form->addButton("override",$this->helper->getLang('button:overwrite'));
+
+        $result .= $form->toHTML();
+        return $result;
+    }
+}
+
+
+class TemplateConflict extends updateResults {
+    public function getResultLine() {
+        $result = parent::getResultLine();
+        $form = new Form();
+        $form->attrs(array('data-animal'=>$this->getAnimal(),"data-page" => $this->getPage(), "data-ismedia" => false));
+
+        $form->addButton("theirs",$this->helper->getLang('button:keep'));
+        $form->addButton("override",$this->helper->getLang('button:overwrite'));
+        $form->addButton("diff",$this->helper->getLang('button:diff'));
 
         $result .= $form->toHTML();
         return $result;

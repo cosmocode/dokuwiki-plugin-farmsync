@@ -63,8 +63,8 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
         }
 
         if ($INPUT->has('farmsync-getdiff')) {
-            $remoteText = $this->farm_util->readRemotePage($animal, $page);
-            $localText = io_readFile(wikiFN($page));
+            $remoteText = $this->farm_util->readRemotePage($animal, $page, false);
+            $localText = io_readFile(wikiFN($page, null, false));
             $diff = new \Diff(explode("\n", $remoteText), explode("\n", $localText));
             $diffformatter = new \TableDiffFormatter();
             $result =  '<table class="diff">';
