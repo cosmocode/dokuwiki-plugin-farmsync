@@ -88,8 +88,14 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             $media = array_merge($media, $this->getDocumentsFromLine($line, 'media'));
         }
         array_unique($media);
-        foreach ($media as $medium) {
-            $this->updateMedium($medium, $animals);
+        $total = count($animals);
+        $i = 0;
+        foreach ($animals as $animal) {
+            foreach ($media as $medium) {
+                $this->updateMedium($medium, $animal);
+            }
+            $i += 1;
+            echo "Media-files of $animal($i/$total) are done</br>";
         }
     }
 
@@ -191,9 +197,9 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
         return $items;
     }
 
-    public function updateMedium($medium, $animals) {
+    public function updateMedium($medium, $animal) {
         $localModTime = filemtime(mediaFN($medium));
-        foreach ($animals as $animal) {
+
             $result = new updateResults($medium, $animal);
             if (!$this->farm_util->remoteMediaExists($animal, $medium)) {
                 $this->farm_util->saveRemoteMedia($animal, $medium);
@@ -221,7 +227,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             $result = new MediaConflict($medium, $animal);
             $result->setMergeResult(new MergeResult(MergeResult::conflicts));
             $this->update_results[$animal]['media']['failed'][] = $result;
-        }
+
     }
 
     /**
