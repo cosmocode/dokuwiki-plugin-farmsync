@@ -17,7 +17,7 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         saveWikiText('wiki:wiki','','deleted');
         saveWikiText('wiki:start','','deleted');
         saveWikiText('wiki:template','','deleted');
-        if (file_exists(wikiFN('wiki:_template',false))) unlink(wikiFN('wiki:_template',false));
+        if (file_exists(wikiFN('wiki:_template',null,false))) unlink(wikiFN('wiki:_template',null,false));
     }
 
 
@@ -217,6 +217,20 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         // assert
         global $MSG;
         $this->assertEquals(array('wiki:_template'), $actual_result);
+        $this->assertEquals(0, count($MSG));
+    }
+
+    public function test_getPagesFromLine_media_ns() {
+        // arrange
+        /** @var \admin_plugin_farmsync $admin */
+        $admin = plugin_load('admin','farmsync');
+
+        // act
+        $actual_result = $admin->getDocumentsFromLine('wiki:*', 'media');
+
+        // assert
+        global $MSG;
+        $this->assertEquals(array('wiki:dokuwiki-128.png', 'wiki:kind_zu_katze.ogv', 'wiki:kind_zu_katze.png', 'wiki:kind_zu_katze.webm'), $actual_result);
         $this->assertEquals(0, count($MSG));
     }
 }

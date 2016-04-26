@@ -76,6 +76,8 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             $templates = array_merge($templates, $this->getDocumentsFromLine($line, 'template'));
         }
         array_unique($templates);
+        $total = count($animals);
+        $i = 0;
     }
 
     /**
@@ -110,7 +112,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
         $cleanline = str_replace('/',':', $line);
         $namespace = join(':', explode(':',$cleanline, -1));
         $documentdir = dirname($type == 'media' ? mediaFN($cleanline, null, false) : wikiFN($cleanline, null, false));
-        $search_algo = $type == 'page' ? 'search_allpages' : ($type == 'media '? 'search_media' : '');
+        $search_algo = ($type == 'page') ? 'search_allpages' : (($type == 'media') ? 'search_media' : '');
         $documents = array();
 
         if (substr($cleanline,-3) == ':**') {
@@ -200,33 +202,33 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
     public function updateMedium($medium, $animal) {
         $localModTime = filemtime(mediaFN($medium));
 
-            $result = new updateResults($medium, $animal);
-            if (!$this->farm_util->remoteMediaExists($animal, $medium)) {
-                $this->farm_util->saveRemoteMedia($animal, $medium);
-                $result->setMergeResult(new MergeResult(MergeResult::newFile));
-                $this->update_results[$animal]['media']['passed'][] = $result;
-                continue;
-            }
-            $remoteModTime = $this->farm_util->getRemoteFilemtime($animal,$medium, true);
-            if ($remoteModTime == $localModTime && io_readFile(mediaFN($medium)) == $this->farm_util->readRemoteMedia($animal, $medium)) {
-                $result->setMergeResult(new MergeResult(MergeResult::unchanged));
-                $this->update_results[$animal]['media']['passed'][] = $result;
-                continue;
-            }
-            if (file_exists(mediaFN($medium,$remoteModTime)) && io_readFile(mediaFN($medium,$remoteModTime)) == $this->farm_util->readRemoteMedia($animal, $medium)) {
-                $this->farm_util->saveRemoteMedia($animal, $medium);
-                $result->setMergeResult(new MergeResult(MergeResult::fileOverwritten));
-                $this->update_results[$animal]['media']['passed'][] = $result;
-                continue;
-            }
-            if ($this->farm_util->remoteMediaExists($animal, $medium, $localModTime) && io_readFile(mediaFN($medium)) == $this->farm_util->readRemoteMedia($animal, $medium, $localModTime)) {
-                $result->setMergeResult(new MergeResult(MergeResult::unchanged));
-                $this->update_results[$animal]['media']['passed'][] = $result;
-                continue;
-            }
-            $result = new MediaConflict($medium, $animal);
-            $result->setMergeResult(new MergeResult(MergeResult::conflicts));
-            $this->update_results[$animal]['media']['failed'][] = $result;
+        $result = new updateResults($medium, $animal);
+        if (!$this->farm_util->remoteMediaExists($animal, $medium)) {
+            $this->farm_util->saveRemoteMedia($animal, $medium);
+            $result->setMergeResult(new MergeResult(MergeResult::newFile));
+            $this->update_results[$animal]['media']['passed'][] = $result;
+            return;
+        }
+        $remoteModTime = $this->farm_util->getRemoteFilemtime($animal,$medium, true);
+        if ($remoteModTime == $localModTime && io_readFile(mediaFN($medium)) == $this->farm_util->readRemoteMedia($animal, $medium)) {
+            $result->setMergeResult(new MergeResult(MergeResult::unchanged));
+            $this->update_results[$animal]['media']['passed'][] = $result;
+            return;
+        }
+        if (file_exists(mediaFN($medium,$remoteModTime)) && io_readFile(mediaFN($medium,$remoteModTime)) == $this->farm_util->readRemoteMedia($animal, $medium)) {
+            $this->farm_util->saveRemoteMedia($animal, $medium);
+            $result->setMergeResult(new MergeResult(MergeResult::fileOverwritten));
+            $this->update_results[$animal]['media']['passed'][] = $result;
+            return;
+        }
+        if ($this->farm_util->remoteMediaExists($animal, $medium, $localModTime) && io_readFile(mediaFN($medium)) == $this->farm_util->readRemoteMedia($animal, $medium, $localModTime)) {
+            $result->setMergeResult(new MergeResult(MergeResult::unchanged));
+            $this->update_results[$animal]['media']['passed'][] = $result;
+            return;
+        }
+        $result = new MediaConflict($medium, $animal);
+        $result->setMergeResult(new MergeResult(MergeResult::conflicts));
+        $this->update_results[$animal]['media']['failed'][] = $result;
 
     }
 
