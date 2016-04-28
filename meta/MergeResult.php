@@ -11,7 +11,7 @@ abstract class BasicEnum
     {
         $c = new \ReflectionClass($this);
         if(!in_array($value, $c->getConstants())) {
-            throw IllegalArgumentException();
+            throw new \InvalidArgumentException();
         }
         $this->value = $value;
     }
