@@ -6,16 +6,13 @@
  * @license GPL 2
  */
 
-
 namespace dokuwiki\plugin\farmsync\meta;
 
 /**
  * Class BasicEnum from http://www.whitewashing.de/2009/08/31/enums-in-php.html
  */
-abstract class BasicEnum
-{
-    final public function __construct($value)
-    {
+abstract class BasicEnum {
+    final public function __construct($value) {
         $c = new \ReflectionClass($this);
         if(!in_array($value, $c->getConstants())) {
             throw new \InvalidArgumentException();
@@ -23,9 +20,8 @@ abstract class BasicEnum
         $this->value = $value;
     }
 
-    final public function __toString()
-    {
-        return (string)$this->value;
+    final public function __toString() {
+        return (string) $this->value;
     }
 }
 
