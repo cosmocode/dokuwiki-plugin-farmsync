@@ -40,7 +40,7 @@ class findCommonAncestor_farmsync_test extends \DokuWikiTest {
 
     public function test_simpleCommonAncestor() {
         // arrange
-        $mock_farm_util = new mock\farm_util();
+        $mock_farm_util = new mock\FarmSyncUtil();
 
         $animaldir = substr(DOKU_TMP_DATA,0,-1).'_animal/';
         $testanimal = 'testanimal';
@@ -56,7 +56,7 @@ class findCommonAncestor_farmsync_test extends \DokuWikiTest {
 
     public function test_noCommonAncestor() {
         // arrange
-        $mock_farm_util = new mock\farm_util();
+        $mock_farm_util = new mock\FarmSyncUtil();
 
         $animaldir = substr(DOKU_TMP_DATA,0,-1).'_animal/';
         $testanimal = 'testanimal';

@@ -1,40 +1,68 @@
 <?php
+/**
+ * FarmSync DokuWiki Plugin
+ *
+ * @author Michael Große <grosse@cosmocode.de>
+ * @license GPL 2
+ */
 
 namespace dokuwiki\plugin\farmsync\meta;
 
-class farm_util {
+/**
+ * Utility methods for accessing animal and farmer data
+ */
+class FarmSyncUtil {
 
     /** @var  \helper_plugin_farmer */
     protected $farmer;
 
+    /**
+     * FarmSyncUtil constructor.
+     */
     function __construct() {
         $this->farmer = plugin_load('helper', 'farmer');
     }
 
-    public function isValidAnimal($animal) {
-
-    }
-
+    /**
+     * Constructs the path to the data directory of a given animal
+     *
+     * @param string $animal
+     * @return string
+     */
     public function getAnimalDataDir($animal) {
         return DOKU_FARMDIR . $animal . '/data/';
     }
 
+    /**
+     * A list of available animals as provided by the Farmer plugin
+     *
+     * @return array
+     */
     public function getAllAnimals() {
         return $this->farmer->getAllAnimals();
     }
 
-    public function replaceRemoteFile($remoteFile, $content, $timestamp = false) {
+    /**
+     * Saves a file with the given content and set its latmodified date if given
+     *
+     * @param string $remoteFile
+     * @param string $content
+     * @param int $timestamp
+     */
+    public function replaceRemoteFile($remoteFile, $content, $timestamp = 0) {
         io_saveFile($remoteFile, $content);
         if ($timestamp) touch($remoteFile, $timestamp);
     }
 
     /**
+     * Saves a page in the given animal and updates the timestamp if given
+     *
      * @param string $animal
      * @param string $page
      * @param string $content
-     * @param string|int $timestamp
+     * @param int $timestamp
      */
-    public function saveRemotePage($animal, $page, $content, $timestamp = false) {
+    public function saveRemotePage($animal, $page, $content, $timestamp = 0) {
         global $INPUT, $conf;
         if (!$timestamp) $timestamp = time();
         $changelogLine = join("\t",array($timestamp, clientIP(true), DOKU_CHANGE_TYPE_EDIT, $page, $INPUT->server->str('REMOTE_USER'), "Page updated from $conf[title] (".DOKU_URL.")"));
@@ -44,23 +72,52 @@ class farm_util {
         // FIXME: update .meta ?
     }
 
-    public function saveRemoteMedia($animal, $medium) {
+    /**
+     * Saves the given local media file to the specified animal
+     *
+     * @param string $animal
+     * @param string $media a valid local MediaID
+     */
+    public function saveRemoteMedia($animal, $media) {
         global $INPUT, $conf;
-        $timestamp = filemtime(mediaFN($medium));
-        $changelogLine = join("\t",array($timestamp, clientIP(true), DOKU_CHANGE_TYPE_EDIT, $medium, $INPUT->server->str('REMOTE_USER'), "Page updated from $conf[title] (".DOKU_URL.")"));
-        $this->addRemoteMediaChangelogRevision($animal, $medium, $changelogLine);
-        $this->replaceRemoteFile($this->getRemoteMediaFilename($animal, $medium), io_readFile(mediaFN($medium), false), $timestamp);
-        $this->replaceRemoteFile($this->getRemoteMediaFilename($animal, $medium, $timestamp), io_readFile(mediaFN($medium), false), $timestamp);
+        $timestamp = filemtime(mediaFN($media));
+        $changelogLine = join("\t",array($timestamp, clientIP(true), DOKU_CHANGE_TYPE_EDIT, $media, $INPUT->server->str('REMOTE_USER'), "Page updated from $conf[title] (".DOKU_URL.")"));
+        $this->addRemoteMediaChangelogRevision($animal, $media, $changelogLine);
+        $this->replaceRemoteFile($this->getRemoteMediaFilename($animal, $media), io_readFile(mediaFN($media), false), $timestamp);
+        $this->replaceRemoteFile($this->getRemoteMediaFilename($animal, $media, $timestamp), io_readFile(mediaFN($media), false), $timestamp);
     }
 
+    /**
+     * Read the contents of a page in an animal
+     *
+     * @param string $animal
+     * @param string $page a page ID
+     * @param bool $clean does the pageID need cleaning?
+     * @return string
+     */
     public function readRemotePage($animal, $page, $clean = true) {
         return io_readFile($this->getRemoteFilename($animal, $page, null, $clean));
     }
 
-    public function readRemoteMedia($animal, $medium, $timestamp = null) {
-        return io_readFile($this->getRemoteMediaFilename($animal, $medium, $timestamp));
+    /**
+     * Read the contents of a media item in an animal
+     *
+     * @param string $animal
+     * @param string $media mediaID
+     * @param int $timestamp revision
+     * @return string
+     */
+    public function readRemoteMedia($animal, $media, $timestamp = 0) {
+        return io_readFile($this->getRemoteMediaFilename($animal, $media, $timestamp));
     }
 
+    /**
+     * Read the content of any file
+     *
+     * @todo Is this function really needed?
+     * @param $remoteFileName
+     * @return string
+     */
     public function readRemoteFile($remoteFileName) {
         return io_readFile($remoteFileName);
     }

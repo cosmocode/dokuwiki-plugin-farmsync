@@ -28,7 +28,7 @@ class addRemoteChangelogRevision_farmsync_test extends \DokuWikiTest {
     public function test_addRemoteChangelogRevision_appendLine() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
-        $farm_util = new \dokuwiki\plugin\farmsync\meta\farm_util();
+        $farm_util = new \dokuwiki\plugin\farmsync\meta\FarmSyncUtil();
         $fn = DOKU_TMP_DATA . 'meta/test.changes';
 
         $original_file = io_readFile($fn);
@@ -46,7 +46,7 @@ class addRemoteChangelogRevision_farmsync_test extends \DokuWikiTest {
     public function test_addRemoteChangelogRevision_addNonexistingLine() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
-        $farm_util = new \dokuwiki\plugin\farmsync\meta\farm_util();
+        $farm_util = new \dokuwiki\plugin\farmsync\meta\FarmSyncUtil();
         $fn = DOKU_TMP_DATA . 'meta/test.changes';
 
         $testline = '1422353850	127.0.0.1	E	unittests	admin	New';
@@ -70,7 +70,7 @@ $testline
     public function test_addRemoteChangelogRevision_addNonexistingLine_truncate() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
-        $farm_util = new \dokuwiki\plugin\farmsync\meta\farm_util();
+        $farm_util = new \dokuwiki\plugin\farmsync\meta\FarmSyncUtil();
         $fn = DOKU_TMP_DATA . 'meta/test.changes';
 
         $testline = '1422353850	127.0.0.1	E	unittests	admin	New';
@@ -89,7 +89,7 @@ $testline";
     public function test_addRemoteChangelogRevision_addExistingLine_move1rev() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
-        $farm_util = new \dokuwiki\plugin\farmsync\meta\farm_util();
+        $farm_util = new \dokuwiki\plugin\farmsync\meta\FarmSyncUtil();
         $fn = DOKU_TMP_DATA . 'meta/test.changes';
 
         $testline = '1422353856	127.0.0.1	E	unittests	admin	New';
@@ -113,7 +113,7 @@ $testline
     public function test_addRemoteChangelogRevision_addExistingLine_move2revs() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
-        $farm_util = new \dokuwiki\plugin\farmsync\meta\farm_util();
+        $farm_util = new \dokuwiki\plugin\farmsync\meta\FarmSyncUtil();
         $fn = DOKU_TMP_DATA . 'meta/test.changes';
 
         $testline = '1422353857	127.0.0.1	E	unittests	admin	New';
@@ -139,7 +139,7 @@ $testline
      * @expectedExceptionMessage 2nd Argument must start with timestamp!
      */
     public function test_addRemoteChangelogRevision_Exception() {
-        $farm_util = new \dokuwiki\plugin\farmsync\meta\farm_util();
+        $farm_util = new \dokuwiki\plugin\farmsync\meta\FarmSyncUtil();
         $fn = DOKU_TMP_DATA . 'meta/test.changes';
 
         $testline = 'not starting with timestamp';

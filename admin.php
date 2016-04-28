@@ -11,8 +11,8 @@ if(!defined('DOKU_INC')) die();
 require_once(DOKU_INC.'inc/DifferenceEngine.php');
 
 use dokuwiki\Form\Form;
-use dokuwiki\plugin\farmsync\meta\farm_util;
-use dokuwiki\plugin\farmsync\meta\updateResults;
+use dokuwiki\plugin\farmsync\meta\FarmSyncUtil;
+use dokuwiki\plugin\farmsync\meta\UpdateResults;
 use dokuwiki\plugin\farmsync\meta\PageConflict;
 use dokuwiki\plugin\farmsync\meta\MediaConflict;
 use dokuwiki\plugin\farmsync\meta\TemplateConflict;
@@ -39,7 +39,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
 
     function __construct()
     {
-        $this->farm_util = new farm_util();
+        $this->farm_util = new FarmSyncUtil();
         $this->update_results = array();
     }
 
@@ -209,7 +209,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
 
     public function updateTemplate($template, $animal) {
         $localModTime = filemtime(wikiFN($template, null, false));
-        $result = new updateResults($template, $animal);
+        $result = new UpdateResults($template, $animal);
 
         $remoteFN = $this->farm_util->getRemoteFilename($animal, $template, null, false);
 
@@ -241,7 +241,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
     public function updateMedium($medium, $animal) {
         $localModTime = filemtime(mediaFN($medium));
 
-        $result = new updateResults($medium, $animal);
+        $result = new UpdateResults($medium, $animal);
         if (!$this->farm_util->remoteMediaExists($animal, $medium)) {
             $this->farm_util->saveRemoteMedia($animal, $medium);
             $result->setMergeResult(new MergeResult(MergeResult::newFile));
@@ -274,10 +274,10 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
     /**
      * @param string   $page
      * @param string[] $animals
-     * @return updateResults
+     * @return UpdateResults
      */
     public function updatePage($page, $animal) {
-            $result = new updateResults($page, $animal);
+            $result = new UpdateResults($page, $animal);
             $localModTime = filemtime(wikiFN($page));
             $localText = io_readFile(wikiFN($page));
             if (!$this->farm_util->remotePageExists($animal, $page)) {
@@ -392,7 +392,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             $this->updateMedia($media, $animals);
             echo "</div>";
             echo "<h1>".$this->getLang('heading:Update done')."</h1>";
-            /** @var updateResults $result */
+            /** @var UpdateResults $result */
             foreach ($this->update_results as $animal => $results) {
                 if (!isset($results['pages']['failed'])) $results['pages']['failed'] = array();
                 if (!isset($results['media']['failed'])) $results['media']['failed'] = array();

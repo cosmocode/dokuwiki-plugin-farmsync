@@ -1,4 +1,11 @@
 <?php
+/**
+ * FarmSync DokuWiki Plugin
+ *
+ * @author Michael Große <grosse@cosmocode.de>
+ * @license GPL 2
+ */
+
 
 namespace dokuwiki\plugin\farmsync\meta;
 

@@ -2,7 +2,7 @@
 
 namespace dokuwiki\plugin\farmsync\test\mock;
 
-class farm_util extends \dokuwiki\plugin\farmsync\meta\farm_util {
+class FarmSyncUtil extends \dokuwiki\plugin\farmsync\meta\FarmSyncUtil {
 
     private $remoteData;
     public $receivedWriteCalls;
@@ -38,7 +38,7 @@ class farm_util extends \dokuwiki\plugin\farmsync\meta\farm_util {
         return $this->remoteData[$animal][$page]['exists'];
     }
 
-    public function replaceRemoteFile($remoteFile, $content, $timestamp = false)
+    public function replaceRemoteFile($remoteFile, $content, $timestamp = 0)
     {
         $this->receivedWriteCalls[] = array(
             'remoteFile' => $remoteFile,

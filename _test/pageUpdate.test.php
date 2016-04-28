@@ -15,7 +15,7 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
 
     public function test_updateAnimal_nonexistingFile() {
         // arrange
-        $mock_farm_util = new mock\farm_util();
+        $mock_farm_util = new mock\FarmSyncUtil();
         saveWikiText('test:page','ABC',"");
         touch(wikiFN('test:page'),1400000000);
         $mock_farm_util->setPageExists('testanimal','test:page',false);
@@ -41,7 +41,7 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
 
     public function test_updateAnimal_identicalFile() {
         // arrange
-        $mock_farm_util = new mock\farm_util();
+        $mock_farm_util = new mock\FarmSyncUtil();
         saveWikiText('test:page','ABC',"");
         touch(wikiFN('test:page'),1400000000);
         $mock_farm_util->setPageExists('testanimal','test:page',true);
@@ -73,7 +73,7 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
         sleep(1);
         saveWikiText('test:page_remoteUnmodified','ABCD',"");
         $newrev = filemtime(wikiFN('test:page_remoteUnmodified'));
-        $mock_farm_util = new mock\farm_util();
+        $mock_farm_util = new mock\FarmSyncUtil();
         $mock_farm_util->setPageExists('testanimal','test:page_remoteUnmodified',true);
         $mock_farm_util->setPagemtime('testanimal','test:page_remoteUnmodified',$oldrev);
         $mock_farm_util->setPageContent('testanimal','test:page_remoteUnmodified','ABC');
@@ -101,7 +101,7 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
 
     public function test_updateAnimal_nolocalChanges() {
         // arrange
-        $mock_farm_util = new mock\farm_util();
+        $mock_farm_util = new mock\FarmSyncUtil();
         saveWikiText('test:page_nolocalChanges','ABC',"");
         touch(wikiFN('test:page_nolocalChanges'),1400000000);
         $mock_farm_util->setPageExists('testanimal','test:page_nolocalChanges',true);
@@ -129,7 +129,7 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
         $testpage = 'test:page_successfulMerge';
         saveWikiText($testpage,"ABCX\n\nDEF\n","");
         touch(wikiFN($testpage),1400000000);
-        $mock_farm_util = new mock\farm_util();
+        $mock_farm_util = new mock\FarmSyncUtil();
         $mock_farm_util->setPageExists('testanimal',$testpage,true);
         $mock_farm_util->setPagemtime('testanimal',$testpage,1400000001);
         $mock_farm_util->setPageContent('testanimal',$testpage,"ABC\n\nDEFY\n");
@@ -161,7 +161,7 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
         $testpage = 'test:page_successfulMerge';
         saveWikiText($testpage,"ABCX\n\nDEF\n","");
         touch(wikiFN($testpage),1400000000);
-        $mock_farm_util = new mock\farm_util();
+        $mock_farm_util = new mock\FarmSyncUtil();
         $mock_farm_util->setPageExists('testanimal',$testpage,true);
         $mock_farm_util->setPagemtime('testanimal',$testpage,1400000001);
         $mock_farm_util->setPageContent('testanimal',$testpage,"ABCY\n\nDEF\n");
