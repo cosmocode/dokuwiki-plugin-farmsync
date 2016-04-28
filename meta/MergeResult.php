@@ -26,7 +26,7 @@ class MergeResult extends BasicEnum {
     const newFile = "new file";
     const fileOverwritten = "file overwritten";
     const mergedWithoutConflicts = "merged without conflicts";
-    const conflicts = "merged with Conflicts";
+    const conflicts = "merged with conflicts";
     const unchanged = "unchanged";
 }
 

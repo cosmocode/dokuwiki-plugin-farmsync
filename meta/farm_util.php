@@ -4,7 +4,12 @@ namespace dokuwiki\plugin\farmsync\meta;
 
 class farm_util {
 
-    function __construct() {}
+    /** @var  \helper_plugin_farmer */
+    protected $farmer;
+
+    function __construct() {
+        $this->farmer = plugin_load('helper', 'farmer');
+    }
 
     public function isValidAnimal($animal) {
 
@@ -15,21 +20,7 @@ class farm_util {
     }
 
     public function getAllAnimals() {
-        // FIXME: replace by call to helper function of farmer plugin
-        $animals = array();
-
-        $dir = dir(DOKU_FARMDIR);
-        while (false !== ($entry = $dir->read())) {
-            if ($entry == '.' || $entry == '..' || $entry == '_animal' || $entry == '.htaccess') {
-                continue;
-            }
-            if (!is_dir(DOKU_FARMDIR . $entry)) {
-                continue;
-            }
-            $animals[] = $entry;
-        }
-        $dir->close();
-        return $animals;
+        return $this->farmer->getAllAnimals();
     }
 
     public function replaceRemoteFile($remoteFile, $content, $timestamp = false) {
@@ -276,9 +267,7 @@ class farm_util {
     }
 
     public function getAnimalLink($animal) {
-        // FIXME replace with farmer plugin helper function
-        global $INPUT;
-        return $INPUT->server->str('REQUEST_SCHEME').'://'.$animal;
+        return $this->farmer->getAnimalURL($animal);
     }
 
 }

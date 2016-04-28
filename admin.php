@@ -336,6 +336,13 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
      * Render HTML output, e.g. helpful text and a form
      */
     public function html() {
+        $farmer = plugin_load('helper', 'farmer');
+        if(!$farmer) {
+            msg('The farmsync plugin requires the farmer plugin to work. Please install it', -1);
+            return;
+        }
+
+
         global $INPUT, $conf;
         if (!($INPUT->has('farmsync-animals') && $INPUT->has('farmsync'))) {
             echo "<div id=\"plugin__farmsync\">";
@@ -406,7 +413,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                     $class = 'withconflicts';
                     $heading = sprintf($this->getLang('heading:animal conflict'), $animal, $pageconflicts+$mediaconflicts+$templateconflicts);
                 }
-                echo "<div class='result $class'><h2><img src='" . DOKU_URL . "lib/tpl/dokuwiki/images/logo.png'></img> " . $heading . "</h2>";
+                echo "<div class='result $class'><h2>" . $heading . "</h2>";
                 echo "<div>";
                 echo "<h3>Pages</h3>";
                 if ($pageconflicts > 0) {
@@ -420,7 +427,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 }
 
                 if ($pagesuccess > 0) {
-                    echo "<a class='show_noconflicts'>Show pages without conflict</a>";
+                    echo '<a class="show_noconflicts wikilink1">' . $this->getLang('link:nocoflictitems') . '</a>';
                     echo "<ul class='noconflicts'>";
                     foreach ($results['pages']['passed'] as $result) {
                         echo "<li class='level1'>";
@@ -442,7 +449,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 }
 
                 if ($templatesuccess > 0) {
-                    echo "<a class='show_noconflicts'>Show templates without conflict</a>";
+                    echo '<a class="show_noconflicts wikilink1">' . $this->getLang('link:nocoflictitems') . '</a>';
                     echo "<ul class='noconflicts'>";
                     foreach ($results['templates']['passed'] as $result) {
                         echo "<li class='level1'>";
@@ -464,7 +471,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 }
 
                 if ($mediasuccess > 0) {
-                    echo "<a class='show_noconflicts'>Show media without conflict</a>";
+                    echo '<a class="show_noconflicts wikilink1">' . $this->getLang('link:nocoflictitems') . '</a>';
                     echo "<ul class='noconflicts'>";
                     foreach ($results['media']['passed'] as $result) {
                         echo "<li class='level1'>";

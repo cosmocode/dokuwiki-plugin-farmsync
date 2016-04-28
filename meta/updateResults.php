@@ -46,9 +46,16 @@ class updateResults {
         $this->_mergeResult = $mergeResult;
     }
 
+    /**
+     * Return the line as formatted HTML
+     *
+     * @return string
+     */
     public function getResultLine()
     {
-        return $this->getPage() . " " . $this->getMergeResult();
+        $text = $this->helper->getLang('mergeresult:'.$this->getMergeResult());
+
+        return '<code>'.$this->getPage() . '</code> ' . $text;
     }
 
     /**
@@ -136,15 +143,18 @@ class MediaConflict extends updateResults {
         $form = new Form();
         $form->attrs(array('data-animal'=>$this->getAnimal(),"data-page" => $this->getPage(), "data-type" => 'media'));
 
+        
+        
+        
         $sourcelink = $form->addTagOpen('a');
         $sourcelink->attr('href',DOKU_URL."lib/exe/detail.php?media=".$this->getPage())->attr('target', '_blank');
-        $form->addHTML('Source Version');
+        $form->addHTML($this->helper->getLang('link:srcversion'));
         $form->addTagClose('a');
 
         $animalbase = $this->_farm_util->getAnimalLink($this->getAnimal());
         $animallink = $form->addTagOpen('a');
         $animallink->attr('href',"$animalbase/lib/exe/detail.php?media=".$this->getPage())->attr('target', '_blank');
-        $form->addHTML('Animal Version');
+        $form->addHTML($this->helper->getLang('link:dstversion'));
         $form->addTagClose('a');
 
         $form->addButton("theirs",$this->helper->getLang('button:keep'));

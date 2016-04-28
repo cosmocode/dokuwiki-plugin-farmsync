@@ -1,25 +1,5 @@
 #plugin__farmsync {
 
-    .panelHeader {
-        background-color: #eee;
-        margin: 0;
-        padding: 10px 10px 8px;
-        overflow: hidden;
-        border-right: 1px solid @ini_border;
-        border-left: 1px solid @ini_border;
-    }
-
-    .panelMain,
-    .panelFooter {
-        padding: 1em;
-        border-right: 1px solid @ini_border;
-        border-left: 1px solid @ini_border;
-    }
-
-    .panelFooter {
-        border-bottom: 1px solid @ini_border;
-    }
-
     form {
         display: block;
         text-align: center;
@@ -54,12 +34,12 @@
             cursor: pointer;
             padding: 5px 5px 3px;
             border-radius: 4px;
-            border: 1px lightgrey solid;
+            border: 1px solid @ini_border;
             margin-bottom: 5px;
             display: inline-block;
             font-weight: bold;
             &:hover {
-                background-color: #ddd;
+                background-color: @ini_background_alt;
             }
         }
 
@@ -67,19 +47,77 @@
             padding: 5px;
             margin: 5px;
             border-radius: 4px;
+            border: 1px solid @ini_border;
 
-            &.withconflicts {
-                background-color: #ffdfde;
-                h2:hover, li.conflict:hover {
-                    background-color: #f0d0d0;
+            // icon before the headline
+            h2::before {
+                display: inline-block;
+                font-size: 20px;
+                width: 25px;
+                height: 25px;
+                text-align: center;
+                border-radius: 50%;
+                margin-right: 10px;
+                border: 1px solid @ini_border;
+            }
+            &.withconflicts h2 {
+                &::before {
+                    content: '!';
+                    background-color: #fdd;
                 }
 
             }
-            &.noconflicts {
-                background-color: #cff9cf;
-                h2:hover {
-                    background-color: #a0f0a0;
+            &.noconflicts h2 {
+                &::before {
+                    content: '✓';
+                    background-color: #cfc;
                 }
+            }
+            h2 {
+                margin-bottom: 0;
+                cursor: pointer;
+                border-radius: 4px;
+            }
+
+            // wrap around all results (can be toggled)
+            > div {
+                margin-left: 35px;
+
+                // type headline
+                h3 {
+                    color: @ini_text_alt;
+                    margin-top: 0.6em;
+                }
+
+                // item lists
+                > ul {
+                    list-style: none;
+                    margin-left: 0;
+                    padding-left: 0;
+
+                    li {
+                        margin-left: 0;
+                    }
+
+                    li div.li::before {
+                        content: '!';
+                        font-weight: bold;
+                        margin-right: 0.5em;
+                    }
+                }
+                > ul.noconflicts {
+                    li div.li::before {
+                        content: '✓';
+                    }
+                }
+            }
+
+            form a {
+                padding: 0 0.5em;
+            }
+
+
+            &.noconflicts {
 
                 > div {
                     display: none;
@@ -101,15 +139,6 @@
                 }
             }
 
-            h2 {
-                margin-bottom: 0;
-                cursor: pointer;
-                border-radius: 4px;
-            }
-
-            h3 {
-                margin-top: 0.6em;
-            }
 
             textarea {
                 width: 100%;
@@ -117,8 +146,6 @@
             }
 
             a.show_noconflicts {
-                color: green;
-                font-weight: bold;
                 cursor: pointer;
                 display: block;
             }
