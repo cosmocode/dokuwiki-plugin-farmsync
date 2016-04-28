@@ -143,17 +143,17 @@ class MediaConflict extends updateResults {
         $form = new Form();
         $form->attrs(array('data-animal'=>$this->getAnimal(),"data-page" => $this->getPage(), "data-type" => 'media'));
 
-        
-        
-        
+
+
+
         $sourcelink = $form->addTagOpen('a');
-        $sourcelink->attr('href',DOKU_URL."lib/exe/detail.php?media=".$this->getPage())->attr('target', '_blank');
+        $sourcelink->attr('href',DOKU_BASE."lib/exe/fetch.php?media=".$this->getPage())->attr('target', '_blank');
         $form->addHTML($this->helper->getLang('link:srcversion'));
         $form->addTagClose('a');
 
         $animalbase = $this->_farm_util->getAnimalLink($this->getAnimal());
         $animallink = $form->addTagOpen('a');
-        $animallink->attr('href',"$animalbase/lib/exe/detail.php?media=".$this->getPage())->attr('target', '_blank');
+        $animallink->attr('href',"$animalbase/lib/exe/fetch.php?media=".$this->getPage())->attr('target', '_blank');
         $form->addHTML($this->helper->getLang('link:dstversion'));
         $form->addTagClose('a');
 
