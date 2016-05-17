@@ -114,17 +114,6 @@ class FarmSyncUtil {
     }
 
     /**
-     * Read the content of any file
-     *
-     * @todo Is this function really needed?
-     * @param $remoteFileName
-     * @return string
-     */
-    public function readRemoteFile($remoteFileName) {
-        return io_readFile($remoteFileName);
-    }
-
-    /**
      * Get the last modified time of an animal's page or media file
      *
      * @param string $animal
