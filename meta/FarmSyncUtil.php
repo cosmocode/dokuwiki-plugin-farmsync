@@ -51,7 +51,7 @@ class FarmSyncUtil {
      */
     public function replaceRemoteFile($remoteFile, $content, $timestamp = 0) {
         io_saveFile($remoteFile, $content);
-        if($timestamp) touch($remoteFile, $timestamp);
+        if ($timestamp) touch($remoteFile, $timestamp);
     }
 
     /**
@@ -64,7 +64,7 @@ class FarmSyncUtil {
      */
     public function saveRemotePage($animal, $page, $content, $timestamp = 0) {
         global $INPUT, $conf;
-        if(!$timestamp) $timestamp = time();
+        if (!$timestamp) $timestamp = time();
         $changelogLine = join("\t", array($timestamp, clientIP(true), DOKU_CHANGE_TYPE_EDIT, $page, $INPUT->server->str('REMOTE_USER'), "Page updated from $conf[title] (" . DOKU_URL . ")"));
         $this->addRemotePageChangelogRevision($animal, $page, $changelogLine);
         $this->replaceRemoteFile($this->getRemoteFilename($animal, $page), $content, $timestamp);
@@ -134,7 +134,7 @@ class FarmSyncUtil {
      * @return mixed
      */
     public function getRemoteFilemtime($animal, $document, $ismedia = false, $clean = true) {
-        if($ismedia) {
+        if ($ismedia) {
             return filemtime($this->getRemoteMediaFilename($animal, $document));
         }
         return filemtime($this->getRemoteFilename($animal, $document, null, $clean));
@@ -218,24 +218,24 @@ class FarmSyncUtil {
         $pageid = array_pop($parts);
         $atticdir = $targetDataDir . 'attic/' . join('/', $parts);
         $atticdir = rtrim($atticdir, '/') . '/';
-        if(!file_exists($atticdir)) return "";
+        if (!file_exists($atticdir)) return "";
         /** @var \Directory $dir */
         $dir = dir($atticdir);
         $oldrevisions = array();
-        while(false !== ($entry = $dir->read())) {
-            if($entry == '.' || $entry == '..' || is_dir($atticdir . $entry)) {
+        while (false !== ($entry = $dir->read())) {
+            if ($entry == '.' || $entry == '..' || is_dir($atticdir . $entry)) {
                 continue;
             }
             list($atticpageid, $timestamp,) = explode('.', $entry);
-            if($atticpageid == $pageid) $oldrevisions[] = $timestamp;
+            if ($atticpageid == $pageid) $oldrevisions[] = $timestamp;
         }
         rsort($oldrevisions);
         $sourceMtime = $this->getRemoteFilemtime($source, $page);
-        foreach($oldrevisions as $rev) {
-            if(!file_exists($this->getRemoteFilename($source, $page, $rev)) && $rev != $sourceMtime) continue;
+        foreach ($oldrevisions as $rev) {
+            if (!file_exists($this->getRemoteFilename($source, $page, $rev)) && $rev != $sourceMtime) continue;
             $sourceArchiveText = $rev == $sourceMtime ? $this->readRemotePage($source, $page) : $this->readRemotePage($source, $page, null, $rev);
             $targetArchiveText = $this->readRemotePage($target, $page, null, $rev);
-            if($sourceArchiveText == $targetArchiveText) {
+            if ($sourceArchiveText == $targetArchiveText) {
                 return $sourceArchiveText;
             }
         }
@@ -253,7 +253,7 @@ class FarmSyncUtil {
         dbglog($changelogLine);
         $remoteChangelog = $this->getAnimalDataDir($animal) . 'meta/' . join('/', explode(':', $page)) . '.changes';
         $revisionsToAdjust = $this->addRemoteChangelogRevision($remoteChangelog, $changelogLine, $truncate);
-        foreach($revisionsToAdjust as $revision) {
+        foreach ($revisionsToAdjust as $revision) {
             $this->replaceRemoteFile($this->getRemoteFilename($animal, $page, intval($revision) - 1), io_readFile($this->getRemoteFilename($animal, $page, intval($revision))));
         }
     }
@@ -268,26 +268,26 @@ class FarmSyncUtil {
     public function addRemoteMediaChangelogRevision($animal, $medium, $changelogLine, $truncate = true) {
         $remoteChangelog = $this->getAnimalDataDir($animal) . 'media_meta/' . join('/', explode(':', $medium)) . '.changes';
         $revisionsToAdjust = $this->addRemoteChangelogRevision($remoteChangelog, $changelogLine, $truncate);
-        foreach($revisionsToAdjust as $revision) {
+        foreach ($revisionsToAdjust as $revision) {
             $this->replaceRemoteFile($this->getRemoteMediaFilename($animal, $medium, intval($revision) - 1), io_readFile($this->getRemoteMediaFilename($animal, $medium, intval($revision))));
         }
     }
 
     public function addRemoteChangelogRevision($remoteChangelog, $changelogLine, $truncate = true) {
         $rev = substr($changelogLine, 0, 10);
-        if(!$this->isValidTimeStamp($rev)) {
+        if (!$this->isValidTimeStamp($rev)) {
             throw new \Exception('2nd Argument must start with timestamp!');
         };
         $lines = explode("\n", io_readFile($remoteChangelog));
         $lineindex = count($lines);
         $revisionsToAdjust = array();
-        foreach($lines as $index => $line) {
-            if(substr($line, 0, 10) == $rev) {
+        foreach ($lines as $index => $line) {
+            if (substr($line, 0, 10) == $rev) {
                 $revisionsToAdjust = $this->freeChangelogRevision($lines, $rev);
                 $lineindex = $index + 1;
                 break;
             }
-            if(substr($line, 0, 10) > $rev) {
+            if (substr($line, 0, 10) > $rev) {
                 $lineindex = $index;
                 break;
             }
@@ -305,7 +305,7 @@ class FarmSyncUtil {
      * @return bool
      */
     private function isValidTimeStamp($timestamp) {
-        return ((string) (int) $timestamp === $timestamp)
+        return ((string)(int)$timestamp === $timestamp)
         && ($timestamp <= PHP_INT_MAX)
         && ($timestamp >= ~PHP_INT_MAX);
     }
@@ -320,22 +320,22 @@ class FarmSyncUtil {
      */
     public function freeChangelogRevision(&$lines, $rev) {
         $lineToMakeFree = -1;
-        foreach($lines as $index => $line) {
-            if(substr($line, 0, 10) == $rev) {
+        foreach ($lines as $index => $line) {
+            if (substr($line, 0, 10) == $rev) {
                 $lineToMakeFree = $index;
                 break;
             }
         }
-        if($lineToMakeFree == -1) return array();
+        if ($lineToMakeFree == -1) return array();
 
         $i = 0;
         $revisionsToAdjust = array($rev);
-        while($lineToMakeFree > 0 && substr($lines[$lineToMakeFree - ($i + 1)], 0, 10) == $rev - ($i + 1)) {
+        while ($lineToMakeFree > 0 && substr($lines[$lineToMakeFree - ($i + 1)], 0, 10) == $rev - ($i + 1)) {
             $revisionsToAdjust[] = $rev - ($i + 1);
             $i += 1;
         }
 
-        for(; $i >= 0; $i -= 1) {
+        for (; $i >= 0; $i -= 1) {
             $parts = explode("\t", $lines[$lineToMakeFree - $i]);
             array_shift($parts);
             array_unshift($parts, intval($rev) - $i - 1);

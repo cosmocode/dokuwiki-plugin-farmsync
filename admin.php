@@ -7,8 +7,8 @@
  */
 
 // must be run within Dokuwiki
-if(!defined('DOKU_INC')) die();
-require_once(DOKU_INC.'inc/DifferenceEngine.php');
+if (!defined('DOKU_INC')) die();
+require_once(DOKU_INC . 'inc/DifferenceEngine.php');
 
 use dokuwiki\Form\Form;
 use dokuwiki\plugin\farmsync\meta\FarmSyncUtil;
@@ -49,7 +49,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
     }
 
     /**
-     * @param string[] $pagelines      List of pages to copy/update in the animals
+     * @param string[] $pagelines List of pages to copy/update in the animals
      * @param string[] $targets List of animals to update
      * @param          $farmHelper
      */
@@ -127,15 +127,15 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
         $search_algo = ($type == 'page') ? 'search_allpages' : (($type == 'media') ? 'search_media' : '');
         $documents = array();
 
-        if (substr($cleanline,-3) == ':**') {
+        if (substr($cleanline, -3) == ':**') {
             $nsfiles = array();
-            $type != 'template' ? search($nsfiles,$documentdir, $search_algo,array()) : $nsfiles = $this->getTemplates($documentdir);
+            $type != 'template' ? search($nsfiles, $documentdir, $search_algo, array()) : $nsfiles = $this->getTemplates($documentdir);
             $documents = array_map(function ($elem) use ($namespace) {
                 return $namespace . ':' . $elem['id'];
             }, $nsfiles);
-        } elseif (substr($cleanline,-2) == ':*') {
+        } elseif (substr($cleanline, -2) == ':*') {
             $nsfiles = array();
-            $type != 'template' ? search($nsfiles,$documentdir, $search_algo,array('depth' => 1)) : $nsfiles = $this->getTemplates($documentdir, null, null, array('depth' => 1));
+            $type != 'template' ? search($nsfiles, $documentdir, $search_algo, array('depth' => 1)) : $nsfiles = $this->getTemplates($documentdir, null, null, array('depth' => 1));
             $documents = array_map(function ($elem) use ($namespace) {
                 return $namespace . ':' . $elem['id'];
             }, $nsfiles);
@@ -178,22 +178,22 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
      * @return array|bool
      */
     public function getTemplates($base, $dir = '', $lvl = 0, $opts = array()) {
-        $dirs   = array();
-        $files  = array();
+        $dirs = array();
+        $files = array();
         $items = array();
 
         // safeguard against runaways #1452
-        if($base == '' || $base == '/') {
+        if ($base == '' || $base == '/') {
             throw new RuntimeException('No valid $base passed to search() - possible misconfiguration or bug');
         }
 
         //read in directories and files
-        $dh = @opendir($base.'/'.$dir);
-        if(!$dh) {
+        $dh = @opendir($base . '/' . $dir);
+        if (!$dh) {
             dbglog('cannot open dir ' . $base . $dir);
             return array();
         }
-        while(($file = readdir($dh)) !== false) {
+        while (($file = readdir($dh)) !== false) {
             if (preg_match('/^[\.]/', $file)) continue;
             if (is_dir($base . '/' . $dir . '/' . $file)) {
                 $dirs[] = $dir . '/' . $file;
@@ -205,12 +205,12 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
 
         foreach ($files as $file) {
             //only search txt files
-            if(substr($file,-4) != '.txt') continue;
+            if (substr($file, -4) != '.txt') continue;
             $items[] = array('id' => pathID($file));
         }
 
-        foreach($dirs as $sdir){
-            $items = array_merge($items, $this->getTemplates($base,$sdir,$lvl+1,$opts));
+        foreach ($dirs as $sdir) {
+            $items = array_merge($items, $this->getTemplates($base, $sdir, $lvl + 1, $opts));
         }
         return $items;
     }
@@ -281,7 +281,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
     }
 
     /**
-     * @param string $page   The pageid
+     * @param string $page The pageid
      * @param string $source The source animal
      * @param string $target The target animal
      * @return UpdateResults
@@ -294,53 +294,53 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
 
         if (!$this->farm_util->remotePageExists($target, $page)) {
             $this->farm_util->saveRemotePage($target, $page, $sourceText, $sourceModTime);
-                $result->setMergeResult(new MergeResult(MergeResult::newFile));
+            $result->setMergeResult(new MergeResult(MergeResult::newFile));
             $this->update_results[$target]['pages']['passed'][] = $result;
-                return;
-            }
+            return;
+        }
         $targetModTime = $this->farm_util->getRemoteFilemtime($target, $page);
         $targetText = $this->farm_util->readRemotePage($target, $page);
         if ($targetModTime == $sourceModTime && $targetText == $sourceText) {
-                $result->setMergeResult(new MergeResult(MergeResult::unchanged));
+            $result->setMergeResult(new MergeResult(MergeResult::unchanged));
             $this->update_results[$target]['pages']['passed'][] = $result;
-                return;
-            }
+            return;
+        }
 
         $sourceArchiveText = $this->farm_util->readRemotePage($source, $page, null, $targetModTime);
         if ($targetModTime < $sourceModTime && $sourceArchiveText == $targetText) {
             $this->farm_util->saveRemotePage($target, $page, $sourceText, $sourceModTime);
-                $result->setMergeResult(new MergeResult(MergeResult::fileOverwritten));
+            $result->setMergeResult(new MergeResult(MergeResult::fileOverwritten));
             $this->update_results[$target]['pages']['passed'][] = $result;
-                return;
-            }
+            return;
+        }
 
-            // We have to merge
+        // We have to merge
         $commonroot = $this->farm_util->findCommonAncestor($page, $source, $target);
         $diff3 = new \Diff3(explode("\n", $commonroot), explode("\n", $targetText), explode("\n", $sourceText));
 
-            // prepare labels
-            $label1 = '✎————————————————— '.$this->getLang('merge_animal').' ————';
-            $label3 = '✏————————————————— '.$this->getLang('merge_source').' ————';
-            $label2 = '✐————————————————————————————————————';
-            $final = join("\n", $diff3->mergedOutput($label1, $label2, $label3));
+        // prepare labels
+        $label1 = '✎————————————————— ' . $this->getLang('merge_animal') . ' ————';
+        $label3 = '✏————————————————— ' . $this->getLang('merge_source') . ' ————';
+        $label2 = '✐————————————————————————————————————';
+        $final = join("\n", $diff3->mergedOutput($label1, $label2, $label3));
         if ($final == $targetText) {
-                $result->setMergeResult(new MergeResult(MergeResult::unchanged));
+            $result->setMergeResult(new MergeResult(MergeResult::unchanged));
             $this->update_results[$target]['pages']['passed'][] = $result;
-                return;
-            }
-            if (!$diff3->_conflictingBlocks) {
-            $this->farm_util->saveRemotePage($target, $page, $final);
-                $result->setFinalText($final);
-                $result->setMergeResult(new MergeResult(MergeResult::mergedWithoutConflicts));
-            $this->update_results[$target]['pages']['passed'][] = $result;
-                return;
-            }
-        $result = new PageConflict($page, $target);
-            $result->setMergeResult(new MergeResult(MergeResult::conflicts));
-            $result->setConflictingBlocks($diff3->_conflictingBlocks);
-            $result->setFinalText($final);
-        $this->update_results[$target]['pages']['failed'][] = $result;
             return;
+        }
+        if (!$diff3->_conflictingBlocks) {
+            $this->farm_util->saveRemotePage($target, $page, $final);
+            $result->setFinalText($final);
+            $result->setMergeResult(new MergeResult(MergeResult::mergedWithoutConflicts));
+            $this->update_results[$target]['pages']['passed'][] = $result;
+            return;
+        }
+        $result = new PageConflict($page, $target);
+        $result->setMergeResult(new MergeResult(MergeResult::conflicts));
+        $result->setConflictingBlocks($diff3->_conflictingBlocks);
+        $result->setFinalText($final);
+        $this->update_results[$target]['pages']['failed'][] = $result;
+        return;
 
     }
 
@@ -349,7 +349,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
      */
     public function html() {
         $farmer = plugin_load('helper', 'farmer');
-        if(!$farmer) {
+        if (!$farmer) {
             msg('The farmsync plugin requires the farmer plugin to work. Please install it', -1);
             return;
         }
@@ -395,7 +395,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             $this->updateTemplates($pages, $source, $targets);
             $this->updateMedia($media, $source, $targets);
             echo "</div>";
-            echo "<h1>".$this->getLang('heading:Update done')."</h1>";
+            echo "<h1>" . $this->getLang('heading:Update done') . "</h1>";
             /** @var UpdateResults $result */
             foreach ($this->update_results as $animal => $results) {
                 if (!isset($results['pages']['failed'])) $results['pages']['failed'] = array();
@@ -415,7 +415,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                     $heading = sprintf($this->getLang('heading:animal noconflict'), $animal);
                 } else {
                     $class = 'withconflicts';
-                    $heading = sprintf($this->getLang('heading:animal conflict'), $animal, $pageconflicts+$mediaconflicts+$templateconflicts);
+                    $heading = sprintf($this->getLang('heading:animal conflict'), $animal, $pageconflicts + $mediaconflicts + $templateconflicts);
                 }
                 echo "<div class='result $class'><h2>" . $heading . "</h2>";
                 echo "<div>";

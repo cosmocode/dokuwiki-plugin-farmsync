@@ -4,12 +4,11 @@ namespace dokuwiki\plugin\farmsync\test\mock;
 
 class FarmSyncUtil extends \dokuwiki\plugin\farmsync\meta\FarmSyncUtil {
 
-    private $remoteData;
     public $receivedWriteCalls;
     public $receivedPageWriteCalls;
+    private $remoteData;
 
-    function __construct()
-    {
+    function __construct() {
         $this->receivedWriteCalls = array();
         $this->receivedPageWriteCalls = array();
     }
@@ -17,7 +16,7 @@ class FarmSyncUtil extends \dokuwiki\plugin\farmsync\meta\FarmSyncUtil {
     /**
      * @param string $animal
      * @param string $page
-     * @param bool   $exists
+     * @param bool $exists
      */
     public function setPageExists($animal, $page, $exists) {
         $this->remoteData[$animal][$page]['exists'] = $exists;
@@ -27,8 +26,7 @@ class FarmSyncUtil extends \dokuwiki\plugin\farmsync\meta\FarmSyncUtil {
         $this->remoteData[$animal]['datadir'] = $dir;
     }
 
-    public function getAnimalDataDir($animal)
-    {
+    public function getAnimalDataDir($animal) {
         return isset($this->remoteData[$animal]['datadir']) ? $this->remoteData[$animal]['datadir'] : '/var/www/farm/' . $animal . '/data/';
     }
 
@@ -37,8 +35,7 @@ class FarmSyncUtil extends \dokuwiki\plugin\farmsync\meta\FarmSyncUtil {
         return isset($this->remoteData[$animal][$page]['exists']) ? $this->remoteData[$animal][$page]['exists'] : parent::remotePageExists($animal, $page, $clean);
     }
 
-    public function replaceRemoteFile($remoteFile, $content, $timestamp = 0)
-    {
+    public function replaceRemoteFile($remoteFile, $content, $timestamp = 0) {
         $this->receivedWriteCalls[] = array(
             'remoteFile' => $remoteFile,
             'content' => $content,
@@ -55,9 +52,7 @@ class FarmSyncUtil extends \dokuwiki\plugin\farmsync\meta\FarmSyncUtil {
     }
 
 
-
-    public function saveRemotePage($animal, $page, $content, $timestamp = false)
-    {
+    public function saveRemotePage($animal, $page, $content, $timestamp = false) {
         $this->receivedPageWriteCalls[] = array(
             'animal' => $animal,
             'page' => $page,
@@ -66,8 +61,7 @@ class FarmSyncUtil extends \dokuwiki\plugin\farmsync\meta\FarmSyncUtil {
         );
     }
 
-    public function setPagemtime($animal, $page, $timestamp)
-    {
+    public function setPagemtime($animal, $page, $timestamp) {
         $this->remoteData[$animal][$page]['mtime'] = $timestamp;
     }
 
@@ -76,8 +70,7 @@ class FarmSyncUtil extends \dokuwiki\plugin\farmsync\meta\FarmSyncUtil {
         return isset($this->remoteData[$animal][$page]['mtime']) ? $this->remoteData[$animal][$page]['mtime'] : parent::getRemoteFilemtime($animal, $page, $ismedia, $clean);
     }
 
-    public function setPageContent($animal, $page, $content)
-    {
+    public function setPageContent($animal, $page, $content) {
         $this->remoteData[$animal][$page]['content'] = $content;
     }
 

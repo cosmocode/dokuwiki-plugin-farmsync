@@ -37,21 +37,20 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         copy(DOKU_TMP_DATA . 'media/wiki/dokuwiki-128.png', $sourcedir . 'media/wiki/dokuwiki-128.png');
     }
 
-    public function setUp()
-    {
+    public function setUp() {
         parent::setUp();
-        saveWikiText('wiki','','deleted');
-        saveWikiText('wiki:wiki','','deleted');
-        saveWikiText('wiki:start','','deleted');
-        saveWikiText('wiki:template','','deleted');
-        if (file_exists(wikiFN('wiki:_template',null,false))) unlink(wikiFN('wiki:_template',null,false));
+        saveWikiText('wiki', '', 'deleted');
+        saveWikiText('wiki:wiki', '', 'deleted');
+        saveWikiText('wiki:start', '', 'deleted');
+        saveWikiText('wiki:template', '', 'deleted');
+        if (file_exists(wikiFN('wiki:_template', null, false))) unlink(wikiFN('wiki:_template', null, false));
     }
 
 
     public function test_getPagesFromLine_singleExistingPage() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin','farmsync');
+        $admin = plugin_load('admin', 'farmsync');
 
         $mock_farm_util = new mock\FarmSyncUtil();
         $sourceanimal = 'sourceanimal';
@@ -68,7 +67,7 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
     public function test_getPagesFromLine_oneLevelNS() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin','farmsync');
+        $admin = plugin_load('admin', 'farmsync');
         $mock_farm_util = new mock\FarmSyncUtil();
         $sourceanimal = 'sourceanimal';
         $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
@@ -78,13 +77,13 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         $actual_result = $admin->getDocumentsFromLine($sourceanimal, 'test:*');
 
         // assert
-        $this->assertEquals(array('test:page','test:page2'), $actual_result);
+        $this->assertEquals(array('test:page', 'test:page2'), $actual_result);
     }
 
     public function test_getPagesFromLine_oneLevelNS_base() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin','farmsync');
+        $admin = plugin_load('admin', 'farmsync');
         $mock_farm_util = new mock\FarmSyncUtil();
         $sourceanimal = 'sourceanimal';
         $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
@@ -100,7 +99,7 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
     public function test_getPagesFromLine_pageMissing() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin','farmsync');
+        $admin = plugin_load('admin', 'farmsync');
         $mock_farm_util = new mock\FarmSyncUtil();
         $sourceanimal = 'sourceanimal';
         $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
@@ -112,13 +111,13 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         // assert
         global $MSG;
         $this->assertEquals(array(), $actual_result);
-        $this->assertEquals(count($MSG),1);
+        $this->assertEquals(count($MSG), 1);
     }
 
     public function test_getPagesFromLine_startPage() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin','farmsync');
+        $admin = plugin_load('admin', 'farmsync');
         $mock_farm_util = new mock\FarmSyncUtil();
         $sourceanimal = 'sourceanimal';
         $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
@@ -130,13 +129,13 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         // assert
         global $MSG;
         $this->assertEquals(array('start:all:start'), $actual_result);
-        $this->assertEquals(count($MSG),0);
+        $this->assertEquals(count($MSG), 0);
     }
 
     public function test_getPagesFromLine_startPage_inNSlikeNS() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin','farmsync');
+        $admin = plugin_load('admin', 'farmsync');
         $mock_farm_util = new mock\FarmSyncUtil();
         $sourceanimal = 'sourceanimal';
         $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
@@ -148,13 +147,13 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         // assert
         global $MSG;
         $this->assertEquals(array('start:nostart:nostart'), $actual_result);
-        $this->assertEquals(count($MSG),0);
+        $this->assertEquals(count($MSG), 0);
     }
 
     public function test_getPagesFromLine_startPage_likeNS() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin','farmsync');
+        $admin = plugin_load('admin', 'farmsync');
         $mock_farm_util = new mock\FarmSyncUtil();
         $sourceanimal = 'sourceanimal';
         $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
@@ -166,13 +165,13 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         // assert
         global $MSG;
         $this->assertEquals(array('start:outeronly'), $actual_result);
-        $this->assertEquals(count($MSG),0);
+        $this->assertEquals(count($MSG), 0);
     }
 
     public function test_getPagesFromLine_startPage_missing() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin','farmsync');
+        $admin = plugin_load('admin', 'farmsync');
         $mock_farm_util = new mock\FarmSyncUtil();
         $sourceanimal = 'sourceanimal';
         $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
@@ -184,13 +183,13 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         // assert
         global $MSG;
         $this->assertEquals(array(), $actual_result);
-        $this->assertEquals(count($MSG),1);
+        $this->assertEquals(count($MSG), 1);
     }
 
     public function test_getPagesFromLine_template_as_page() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin','farmsync');
+        $admin = plugin_load('admin', 'farmsync');
         $mock_farm_util = new mock\FarmSyncUtil();
         $sourceanimal = 'sourceanimal';
         $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
@@ -208,7 +207,7 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
     public function test_getPagesFromLine_template_missing() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin','farmsync');
+        $admin = plugin_load('admin', 'farmsync');
         $mock_farm_util = new mock\FarmSyncUtil();
         $sourceanimal = 'sourceanimal';
         $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
@@ -226,7 +225,7 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
     public function test_getPagesFromLine_template_existing_as_page() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin','farmsync');
+        $admin = plugin_load('admin', 'farmsync');
         $mock_farm_util = new mock\FarmSyncUtil();
         $sourceanimal = 'sourceanimal';
         $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
@@ -244,7 +243,7 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
     public function test_getPagesFromLine_template_existing() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin','farmsync');
+        $admin = plugin_load('admin', 'farmsync');
         $mock_farm_util = new mock\FarmSyncUtil();
         $sourceanimal = 'sourceanimal';
         $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
@@ -263,7 +262,7 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
     public function test_getPagesFromLine_template_ns() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin','farmsync');
+        $admin = plugin_load('admin', 'farmsync');
         $mock_farm_util = new mock\FarmSyncUtil();
         $sourceanimal = 'sourceanimal';
         $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
@@ -281,7 +280,7 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
     public function test_getPagesFromLine_template_ns_deep() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin','farmsync');
+        $admin = plugin_load('admin', 'farmsync');
         $mock_farm_util = new mock\FarmSyncUtil();
         $sourceanimal = 'sourceanimal';
         $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
@@ -300,7 +299,7 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
     public function test_getPagesFromLine_media_ns() {
         // arrange
         /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin','farmsync');
+        $admin = plugin_load('admin', 'farmsync');
         $mock_farm_util = new mock\FarmSyncUtil();
         $sourceanimal = 'sourceanimal';
         $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');

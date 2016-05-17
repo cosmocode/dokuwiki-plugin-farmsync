@@ -11,8 +11,7 @@ namespace dokuwiki\plugin\farmsync\test;
 class addRemoteChangelogRevision_farmsync_test extends \DokuWikiTest {
     protected $pluginsEnabled = array('farmsync');
 
-    public function setUp()
-    {
+    public function setUp() {
         parent::setUp();
 
         $changelog_text = "1422353621	127.0.0.1	C	unittests	user0	created	
@@ -95,7 +94,7 @@ $testline";
         $testline = '1422353856	127.0.0.1	E	unittests	admin	New';
 
         // act
-        $result = $farm_util->addRemoteChangelogRevision($fn,$testline, false);
+        $result = $farm_util->addRemoteChangelogRevision($fn, $testline, false);
         $actual_file = io_readFile($fn);
 
         // assert
@@ -119,7 +118,7 @@ $testline
         $testline = '1422353857	127.0.0.1	E	unittests	admin	New';
 
         // act
-        $result = $farm_util->addRemoteChangelogRevision($fn,$testline, false);
+        $result = $farm_util->addRemoteChangelogRevision($fn, $testline, false);
         $actual_file = io_readFile($fn);
 
         // assert
@@ -144,6 +143,6 @@ $testline
 
         $testline = 'not starting with timestamp';
 
-        $farm_util->addRemoteChangelogRevision($fn,$testline);
+        $farm_util->addRemoteChangelogRevision($fn, $testline);
     }
 }

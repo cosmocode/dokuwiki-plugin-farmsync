@@ -6,7 +6,7 @@
  * @author  Michael Große <dokuwiki@cosmocode.de>
  */
 
-if(!defined('DOKU_INC')) die();
+if (!defined('DOKU_INC')) die();
 
 use dokuwiki\plugin\farmsync\meta\FarmSyncUtil;
 
@@ -24,8 +24,7 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
 
     private $farm_util;
 
-    function __construct()
-    {
+    function __construct() {
         $this->farm_util = new FarmSyncUtil();
     }
 
@@ -38,7 +37,7 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
      * @return bool
      */
     public function handle_ajax(Doku_Event $event, $param) {
-        if($event->data != 'plugin_farmsync') return;
+        if ($event->data != 'plugin_farmsync') return;
         $event->preventDefault();
         $event->stopPropagation();
 
@@ -46,7 +45,7 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
 
         $sectok = $INPUT->str('sectok');
         if (!checkSecurityToken($sectok)) {
-            $this->sendResponse(403,"Security-Token invalid!");
+            $this->sendResponse(403, "Security-Token invalid!");
             return;
         }
 
@@ -59,14 +58,14 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
             $sourceText = $this->farm_util->readRemotePage($source, $page, false);
             $diff = new \Diff(explode("\n", $targetText), explode("\n", $sourceText));
             $diffformatter = new \TableDiffFormatter();
-            $result =  '<table class="diff">';
-            $result .=  '<tr>';
-            $result .=  '<th colspan="2">'.$this->getLang('diff:animal').'</th>';
-            $result .=  '<th colspan="2">'.$this->getLang('diff:source').'</th>';
-            $result .=  '</tr>';
-            $result .=  $diffformatter->format($diff);
-            $result .=  '</table>';
-            $this->sendResponse(200,$result);
+            $result = '<table class="diff">';
+            $result .= '<tr>';
+            $result .= '<th colspan="2">' . $this->getLang('diff:animal') . '</th>';
+            $result .= '<th colspan="2">' . $this->getLang('diff:source') . '</th>';
+            $result .= '</tr>';
+            $result .= $diffformatter->format($diff);
+            $result .= '</table>';
+            $this->sendResponse(200, $result);
             return;
         }
 
@@ -76,12 +75,12 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
             } elseif ($INPUT->str('farmsync-type') == 'page') {
                 $this->overwriteRemotePage($source, $target, $page);
             } else {
-                $targetFN = $this->farm_util->getRemoteFilename($target,$page, null, false);
-                $sourceFN = $this->farm_util->getRemoteFilename($source,$page, null, false);
+                $targetFN = $this->farm_util->getRemoteFilename($target, $page, null, false);
+                $sourceFN = $this->farm_util->getRemoteFilename($source, $page, null, false);
 
                 $this->farm_util->replaceRemoteFile($targetFN, io_readFile($sourceFN), filemtime($sourceFN));
             }
-            $this->sendResponse(200,"");
+            $this->sendResponse(200, "");
             return;
         }
 
@@ -95,10 +94,10 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
     }
 
     /**
-     * @param int    $code
+     * @param int $code
      * @param string $msg
      */
-    private function sendResponse($code, $msg){
+    private function sendResponse($code, $msg) {
         header('Content-Type: application/json');
         http_status($code);
         $json = new JSON;
@@ -114,7 +113,7 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
         global $INPUT;
         $sourceModTime = $this->farm_util->getRemoteFilemtime($source, $page);
         $targetArchiveFileName = $this->farm_util->getRemoteFilename($target, $page, $sourceModTime);
-        $changelogline = join("\t",array($sourceModTime, clientIP(true), DOKU_CHANGE_TYPE_MINOR_EDIT, $page, $INPUT->server->str('REMOTE_USER'), "Revision inserted due to manual merge"));
+        $changelogline = join("\t", array($sourceModTime, clientIP(true), DOKU_CHANGE_TYPE_MINOR_EDIT, $page, $INPUT->server->str('REMOTE_USER'), "Revision inserted due to manual merge"));
         $this->farm_util->addRemotePageChangelogRevision($target, $page, $changelogline, false);
         $this->farm_util->replaceRemoteFile($targetArchiveFileName, $this->farm_util->readRemotePage($source, $page));
         $this->farm_util->saveRemotePage($target, $page, $content);
