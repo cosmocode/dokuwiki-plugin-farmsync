@@ -190,7 +190,6 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
         //read in directories and files
         $dh = @opendir($base . '/' . $dir);
         if (!$dh) {
-            dbglog('cannot open dir ' . $base . $dir);
             return array();
         }
         while (($file = readdir($dh)) !== false) {

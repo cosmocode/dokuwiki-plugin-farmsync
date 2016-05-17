@@ -148,7 +148,7 @@ class FarmSyncUtil {
      * @param string $document the full pageid
      * @param string|null $timestamp set to get a version in the attic
      * @param bool $clean Should the pageid be cleaned?
-     * @return mixed
+     * @return string The path to the page at the animal
      */
     public function getRemoteFilename($animal, $document, $timestamp = null, $clean = true) {
         global $conf, $cache_wikifn;
@@ -176,7 +176,7 @@ class FarmSyncUtil {
      * @param string $document Either the page-id or the media-id, colon-separated
      * @param bool $ismedia
      * @param bool $clean For pages only: define if the pageid should be cleaned
-     * @return mixed
+     * @return int The modified time of the given document
      */
     public function getRemoteFilemtime($animal, $document, $ismedia = false, $clean = true) {
         if ($ismedia) {
@@ -202,7 +202,9 @@ class FarmSyncUtil {
     }
 
     /**
-     * @todo describe what it does
+     * Finds the common ancestor revision of two revisions of a page.
+     *
+     * The goal is to find the revision that exists at both target and animal with the same timestamp and content.
      *
      * @param string $page
      * @param string $source
@@ -247,7 +249,6 @@ class FarmSyncUtil {
      * @throws \Exception
      */
     public function addRemotePageChangelogRevision($animal, $page, $changelogLine, $truncate = true) {
-        dbglog($changelogLine);
         $remoteChangelog = $this->getAnimalDataDir($animal) . 'meta/' . join('/', explode(':', $page)) . '.changes';
         $revisionsToAdjust = $this->addRemoteChangelogRevision($remoteChangelog, $changelogLine, $truncate);
         foreach ($revisionsToAdjust as $revision) {
