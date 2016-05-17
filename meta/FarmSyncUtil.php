@@ -24,6 +24,15 @@ class FarmSyncUtil {
     }
 
     /**
+     * A list of available animals as provided by the Farmer plugin
+     *
+     * @return array
+     */
+    public function getAllAnimals() {
+        return $this->farmer->getAllAnimals();
+    }
+
+    /**
      * Constructs the path to the data directory of a given animal
      *
      * @param string $animal
@@ -33,13 +42,8 @@ class FarmSyncUtil {
         return DOKU_FARMDIR . $animal . '/data/';
     }
 
-    /**
-     * A list of available animals as provided by the Farmer plugin
-     *
-     * @return array
-     */
-    public function getAllAnimals() {
-        return $this->farmer->getAllAnimals();
+    public function getAnimalLink($animal) {
+        return $this->farmer->getAnimalURL($animal);
     }
 
     /**
@@ -114,34 +118,6 @@ class FarmSyncUtil {
     }
 
     /**
-     * Get the last modified time of an animal's page or media file
-     *
-     * @param string $animal
-     * @param string $document Either the page-id or the media-id, colon-separated
-     * @param bool $ismedia
-     * @param bool $clean For pages only: define if the pageid should be cleaned
-     * @return mixed
-     */
-    public function getRemoteFilemtime($animal, $document, $ismedia = false, $clean = true) {
-        if ($ismedia) {
-            return filemtime($this->getRemoteMediaFilename($animal, $document));
-        }
-        return filemtime($this->getRemoteFilename($animal, $document, null, $clean));
-    }
-
-    /**
-     * Check if a page in a given animal exists
-     *
-     * @param string $animal
-     * @param string $page
-     * @param bool $clean
-     * @return bool
-     */
-    public function remotePageExists($animal, $page, $clean = true) {
-        return file_exists($this->getRemoteFilename($animal, $page, null, $clean));
-    }
-
-    /**
      * Get the path to a media item in an animal
      *
      * @param string $animal
@@ -191,6 +167,38 @@ class FarmSyncUtil {
         $conf['olddir'] = $source_olddir;
 
         return $FN;
+    }
+
+    /**
+     * Get the last modified time of an animal's page or media file
+     *
+     * @param string $animal
+     * @param string $document Either the page-id or the media-id, colon-separated
+     * @param bool $ismedia
+     * @param bool $clean For pages only: define if the pageid should be cleaned
+     * @return mixed
+     */
+    public function getRemoteFilemtime($animal, $document, $ismedia = false, $clean = true) {
+        if ($ismedia) {
+            return filemtime($this->getRemoteMediaFilename($animal, $document));
+        }
+        return filemtime($this->getRemoteFilename($animal, $document, null, $clean));
+    }
+
+    /**
+     * Check if a page in a given animal exists
+     *
+     * @param string $animal
+     * @param string $page
+     * @param bool $clean
+     * @return bool
+     */
+    public function remotePageExists($animal, $page, $clean = true) {
+        return file_exists($this->getRemoteFilename($animal, $page, null, $clean));
+    }
+
+    public function remoteMediaExists($animal, $medium, $timestamp = null) {
+        return file_exists($this->getRemoteMediaFilename($animal, $medium, $timestamp));
     }
 
     /**
@@ -288,25 +296,13 @@ class FarmSyncUtil {
     }
 
     /**
-     * taken from http://stackoverflow.com/questions/2524680/check-whether-the-string-is-a-unix-timestamp#2524761
-     *
-     * @param $timestamp
-     * @return bool
-     */
-    private function isValidTimeStamp($timestamp) {
-        return ((string)(int)$timestamp === $timestamp)
-        && ($timestamp <= PHP_INT_MAX)
-        && ($timestamp >= ~PHP_INT_MAX);
-    }
-
-    /**
-     * Modify the changelog so that the revision $rev does not have a changelog entry. However modifying the timestamps
-     * in the changelog only works if we move the attic revisions as well.
-     *
-     * @param  string[] $lines the changelog lines. This array will be adjusted by this function
-     * @param  string $rev The timestamp which should not have an entry
-     * @return string[]         List of attic revisions that need to be moved 1s back in time
-     */
+ * Modify the changelog so that the revision $rev does not have a changelog entry. However modifying the timestamps
+ * in the changelog only works if we move the attic revisions as well.
+ *
+ * @param  string[] $lines the changelog lines. This array will be adjusted by this function
+ * @param  string $rev The timestamp which should not have an entry
+ * @return string[]         List of attic revisions that need to be moved 1s back in time
+ */
     public function freeChangelogRevision(&$lines, $rev) {
         $lineToMakeFree = -1;
         foreach ($lines as $index => $line) {
@@ -335,12 +331,19 @@ class FarmSyncUtil {
         return $revisionsToAdjust;
     }
 
-    public function remoteMediaExists($animal, $medium, $timestamp = null) {
-        return file_exists($this->getRemoteMediaFilename($animal, $medium, $timestamp));
+    /**
+     * taken from http://stackoverflow.com/questions/2524680/check-whether-the-string-is-a-unix-timestamp#2524761
+     *
+     * @param $timestamp
+     * @return bool
+     */
+    private function isValidTimeStamp($timestamp) {
+        return ((string)(int)$timestamp === (string)$timestamp);
     }
 
-    public function getAnimalLink($animal) {
-        return $this->farmer->getAnimalURL($animal);
-    }
+
+
+
+
 
 }
