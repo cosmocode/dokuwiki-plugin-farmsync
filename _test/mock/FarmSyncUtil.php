@@ -47,13 +47,12 @@ class FarmSyncUtil extends \dokuwiki\plugin\farmsync\meta\FarmSyncUtil {
         );
     }
 
-    public function setCommonAncestor($animal, $page, $content) {
-        $this->remoteData[$animal][$page]['commonAncestor'] = $content;
+    public function setCommonAncestor($source, $animal, $page, $content) {
+        $this->remoteData[$source][$animal][$page]['commonAncestor'] = $content;
     }
 
-    public function findCommonAncestor($page, $animal)
-    {
-        return isset($this->remoteData[$animal][$page]['commonAncestor']) ? $this->remoteData[$animal][$page]['commonAncestor'] : parent::findCommonAncestor($page, $animal);
+    public function findCommonAncestor($page, $source, $target) {
+        return isset($this->remoteData[$source][$target][$page]['commonAncestor']) ? $this->remoteData[$source][$target][$page]['commonAncestor'] : parent::findCommonAncestor($page, $source, $target);
     }
 
 
@@ -74,9 +73,8 @@ class FarmSyncUtil extends \dokuwiki\plugin\farmsync\meta\FarmSyncUtil {
     }
 
 
-    public function getRemoteFilemtime($animal, $page, $ismedia = false, $clean = true)
-    {
-        return $this->remoteData[$animal][$page]['mtime'];
+    public function getRemoteFilemtime($animal, $page, $ismedia = false, $clean = true) {
+        return isset($this->remoteData[$animal][$page]['mtime']) ? $this->remoteData[$animal][$page]['mtime'] : parent::getRemoteFilemtime($animal, $page, $ismedia, $clean);
     }
 
     public function setPageContent($animal, $page, $content)
@@ -84,9 +82,8 @@ class FarmSyncUtil extends \dokuwiki\plugin\farmsync\meta\FarmSyncUtil {
         $this->remoteData[$animal][$page]['content'] = $content;
     }
 
-    public function readRemotePage($animal, $page, $clean = true)
-    {
-        return $this->remoteData[$animal][$page]['content'];
+    public function readRemotePage($animal, $page, $clean = true, $timestamp = null) {
+        return isset($this->remoteData[$animal][$page]['content']) ? $this->remoteData[$animal][$page]['content'] : parent::readRemotePage($animal, $page, $clean, $timestamp);
     }
 
 

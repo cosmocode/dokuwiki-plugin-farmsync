@@ -75,16 +75,18 @@ class FarmSyncUtil {
     /**
      * Saves the given local media file to the specified animal
      *
-     * @param string $animal
+     * @param string $source
+     * @param string $target
      * @param string $media a valid local MediaID
      */
-    public function saveRemoteMedia($animal, $media) {
+    public function saveRemoteMedia($source, $target, $media) {
         global $INPUT, $conf;
-        $timestamp = filemtime(mediaFN($media));
+        $timestamp = $this->getRemoteFilemtime($source, $media, true);
         $changelogLine = join("\t", array($timestamp, clientIP(true), DOKU_CHANGE_TYPE_EDIT, $media, $INPUT->server->str('REMOTE_USER'), "Page updated from $conf[title] (" . DOKU_URL . ")"));
-        $this->addRemoteMediaChangelogRevision($animal, $media, $changelogLine);
-        $this->replaceRemoteFile($this->getRemoteMediaFilename($animal, $media), io_readFile(mediaFN($media), false), $timestamp);
-        $this->replaceRemoteFile($this->getRemoteMediaFilename($animal, $media, $timestamp), io_readFile(mediaFN($media), false), $timestamp);
+        $this->addRemoteMediaChangelogRevision($target, $media, $changelogLine);
+        $sourceContent = $this->readRemoteMedia($source, $media);
+        $this->replaceRemoteFile($this->getRemoteMediaFilename($target, $media), $sourceContent, $timestamp);
+        $this->replaceRemoteFile($this->getRemoteMediaFilename($target, $media, $timestamp), $sourceContent, $timestamp);
     }
 
     /**
@@ -95,8 +97,8 @@ class FarmSyncUtil {
      * @param bool $clean does the pageID need cleaning?
      * @return string
      */
-    public function readRemotePage($animal, $page, $clean = true) {
-        return io_readFile($this->getRemoteFilename($animal, $page, null, $clean));
+    public function readRemotePage($animal, $page, $clean = true, $timestamp = null) {
+        return io_readFile($this->getRemoteFilename($animal, $page, $timestamp, $clean));
     }
 
     /**
@@ -204,15 +206,17 @@ class FarmSyncUtil {
 
     /**
      * @todo describe what it does
+     *
      * @param string $page
-     * @param string $animal
+     * @param string $source
+     * @param string $target
      * @return string
      */
-    public function findCommonAncestor($page, $animal) {
-        $remoteDataDir = $this->getAnimalDataDir($animal);
+    public function findCommonAncestor($page, $source, $target) {
+        $targetDataDir = $this->getAnimalDataDir($target);
         $parts = explode(':', $page);
         $pageid = array_pop($parts);
-        $atticdir = $remoteDataDir . 'attic/' . join('/', $parts);
+        $atticdir = $targetDataDir . 'attic/' . join('/', $parts);
         $atticdir = rtrim($atticdir, '/') . '/';
         if(!file_exists($atticdir)) return "";
         /** @var \Directory $dir */
@@ -226,13 +230,13 @@ class FarmSyncUtil {
             if($atticpageid == $pageid) $oldrevisions[] = $timestamp;
         }
         rsort($oldrevisions);
-        $localMtime = filemtime(wikiFN($page));
+        $sourceMtime = $this->getRemoteFilemtime($source, $page);
         foreach($oldrevisions as $rev) {
-            if(!file_exists(wikiFN($page, $rev)) && $rev != $localMtime) continue;
-            $localArchiveText = $rev == $localMtime ? io_readFile(wikiFN($page)) : io_readFile(wikiFN($page, $rev));
-            $remoteArchiveText = io_readFile($this->getRemoteFilename($animal, $page, $rev));
-            if($localArchiveText == $remoteArchiveText) {
-                return $localArchiveText;
+            if(!file_exists($this->getRemoteFilename($source, $page, $rev)) && $rev != $sourceMtime) continue;
+            $sourceArchiveText = $rev == $sourceMtime ? $this->readRemotePage($source, $page) : $this->readRemotePage($source, $page, null, $rev);
+            $targetArchiveText = $this->readRemotePage($target, $page, null, $rev);
+            if($sourceArchiveText == $targetArchiveText) {
+                return $sourceArchiveText;
             }
         }
         return "";

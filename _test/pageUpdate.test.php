@@ -13,18 +13,32 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
 
     protected $pluginsEnabled = array('farmsync',);
 
+    public static function setUpBeforeClass() {
+        parent::setUpBeforeClass();
+        $sourcedir = substr(DOKU_TMP_DATA, 0, -1) . '_sourcePageUpdate/';
+        mkdir($sourcedir);
+        mkdir($sourcedir . 'attic');
+        mkdir($sourcedir . 'pages');
+
+        io_saveFile($sourcedir . 'pages/test/page.txt', "ABC");
+        touch($sourcedir . 'pages/test/page.txt',1400000000);
+        io_saveFile($sourcedir . 'attic/test/page.1400000000.txt.gz', "ABC");
+
+
+    }
+
     public function test_updateAnimal_nonexistingFile() {
         // arrange
         $mock_farm_util = new mock\FarmSyncUtil();
-        saveWikiText('test:page','ABC',"");
-        touch(wikiFN('test:page'),1400000000);
         $mock_farm_util->setPageExists('testanimal','test:page',false);
         /** @var \admin_plugin_farmsync $admin */
         $admin = plugin_load('admin','farmsync');
+        $sourceanimal = 'sourceanimal';
+        $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourcePageUpdate/');
         $admin->farm_util = $mock_farm_util;
 
         // act
-        $admin->updatePage('test:page','testanimal');
+        $admin->updatePage('test:page', $sourceanimal, 'testanimal');
         $updated_pages = $admin->getUpdateResults();
 
         // assert
@@ -42,8 +56,8 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
     public function test_updateAnimal_identicalFile() {
         // arrange
         $mock_farm_util = new mock\FarmSyncUtil();
-        saveWikiText('test:page','ABC',"");
-        touch(wikiFN('test:page'),1400000000);
+        $sourceanimal = 'sourceanimal';
+        $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourcePageUpdate/');
         $mock_farm_util->setPageExists('testanimal','test:page',true);
         $mock_farm_util->setPagemtime('testanimal','test:page',1400000000);
         $mock_farm_util->setPageContent('testanimal','test:page','ABC');
@@ -53,7 +67,7 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
 
 
         // act
-        $admin->updatePage('test:page','testanimal');
+        $admin->updatePage('test:page', $sourceanimal, 'testanimal');
         $updated_pages = $admin->getUpdateResults();
 
         // assert
@@ -68,22 +82,26 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
      */
     public function test_updateAnimal_remoteUnmodified() {
         // arrange
-        saveWikiText('test:page_remoteUnmodified','ABC',"");
-        $oldrev = filemtime(wikiFN('test:page_remoteUnmodified'));
-        sleep(1);
-        saveWikiText('test:page_remoteUnmodified','ABCD',"");
-        $newrev = filemtime(wikiFN('test:page_remoteUnmodified'));
+        $sourcedir = substr(DOKU_TMP_DATA, 0, -1) . '_sourcePageUpdate/';
+        $oldrev = 1400000100;
+        $newrev = 1400000200;
+        io_saveFile($sourcedir . "attic/test/page_remoteunmodified.$oldrev.txt.gz", "ABC");
+        io_saveFile($sourcedir . "pages/test/page_remoteunmodified.txt", "ABCD");
+        touch($sourcedir . 'pages/test/page_remoteunmodified.txt',$newrev);
+        io_saveFile($sourcedir . "attic/test/page_remoteunmodified.$newrev.txt.gz", "ABCD");
         $mock_farm_util = new mock\FarmSyncUtil();
-        $mock_farm_util->setPageExists('testanimal','test:page_remoteUnmodified',true);
-        $mock_farm_util->setPagemtime('testanimal','test:page_remoteUnmodified',$oldrev);
-        $mock_farm_util->setPageContent('testanimal','test:page_remoteUnmodified','ABC');
+        $sourceanimal = 'sourceanimal';
+        $mock_farm_util->setAnimalDataDir($sourceanimal, $sourcedir);
+        $mock_farm_util->setPageExists('testanimal','test:page_remoteunmodified',true);
+        $mock_farm_util->setPagemtime('testanimal','test:page_remoteunmodified',$oldrev);
+        $mock_farm_util->setPageContent('testanimal','test:page_remoteunmodified','ABC');
         /** @var \admin_plugin_farmsync $admin */
         $admin = plugin_load('admin','farmsync');
         $admin->farm_util = $mock_farm_util;
 
 
         // act
-        $admin->updatePage('test:page_remoteUnmodified','testanimal');
+        $admin->updatePage('test:page_remoteunmodified', $sourceanimal, 'testanimal');
         $updated_pages = $admin->getUpdateResults();
 
         // assert
@@ -91,7 +109,7 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
         $this->assertEquals(count($mock_farm_util->receivedPageWriteCalls),1);
         $this->assertEquals(array(
             'animal' => 'testanimal',
-            'page' => 'test:page_remoteUnmodified',
+            'page' => 'test:page_remoteunmodified',
             'content' => 'ABCD',
             'timestamp' => $newrev
         ),$mock_farm_util->receivedPageWriteCalls[0]);
@@ -102,19 +120,19 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
     public function test_updateAnimal_nolocalChanges() {
         // arrange
         $mock_farm_util = new mock\FarmSyncUtil();
-        saveWikiText('test:page_nolocalChanges','ABC',"");
-        touch(wikiFN('test:page_nolocalChanges'),1400000000);
-        $mock_farm_util->setPageExists('testanimal','test:page_nolocalChanges',true);
-        $mock_farm_util->setPagemtime('testanimal','test:page_nolocalChanges',1400000001);
-        $mock_farm_util->setPageContent('testanimal','test:page_nolocalChanges','ABCD');
-        $mock_farm_util->setCommonAncestor('testanimal', 'test:page_nolocalChanges', 'ABC');
+        $sourceanimal = 'sourceanimal';
+        $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourcePageUpdate/');
+        $mock_farm_util->setPageExists('testanimal','test:page',true);
+        $mock_farm_util->setPagemtime('testanimal','test:page',1400000001);
+        $mock_farm_util->setPageContent('testanimal','test:page','ABCD');
+        $mock_farm_util->setCommonAncestor('sourceanimal', 'testanimal', 'test:page', 'ABC');
         /** @var \admin_plugin_farmsync $admin */
         $admin = plugin_load('admin','farmsync');
         $admin->farm_util = $mock_farm_util;
 
 
         // act
-        $admin->updatePage('test:page_nolocalChanges','testanimal');
+        $admin->updatePage('test:page', $sourceanimal, 'testanimal');
         $updated_pages = $admin->getUpdateResults();
 
         // assert
@@ -126,22 +144,24 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
 
     public function test_updateAnimal_successfulMerge() {
         // arrange
-        $testpage = 'test:page_successfulMerge';
-        saveWikiText($testpage,"ABCX\n\nDEF\n","");
-        touch(wikiFN($testpage),1400000000);
+        $testpage = 'test:page_successfulmerge';
+        $sourcedir = substr(DOKU_TMP_DATA, 0, -1) . '_sourcePageUpdate/';
+        $sourceanimal = 'sourceanimal';
+        io_saveFile($sourcedir . "pages/test/page_successfulmerge.txt", "ABCX\n\nDEF\n");
+        touch($sourcedir . 'pages/test/page_successfulmerge.txt',1400000000);
         $mock_farm_util = new mock\FarmSyncUtil();
+        $mock_farm_util->setAnimalDataDir($sourceanimal, $sourcedir);
         $mock_farm_util->setPageExists('testanimal',$testpage,true);
         $mock_farm_util->setPagemtime('testanimal',$testpage,1400000001);
         $mock_farm_util->setPageContent('testanimal',$testpage,"ABC\n\nDEFY\n");
-        $mock_farm_util->setCommonAncestor('testanimal', $testpage, "ABC\n\nDEF\n");
+        $mock_farm_util->setCommonAncestor($sourceanimal, 'testanimal', $testpage, "ABC\n\nDEF\n");
         /** @var \admin_plugin_farmsync $admin */
         $admin = plugin_load('admin','farmsync');
         $admin->farm_util = $mock_farm_util;
 
-
         // act
-        $admin->updatePage($testpage,'testanimal');
-        /** @var \updateResults[] $updated_pages */
+        $admin->updatePage($testpage, $sourceanimal, 'testanimal');
+        /** @var \dokuwiki\plugin\farmsync\meta\UpdateResults[] $updated_pages */
         $updated_pages = $admin->getUpdateResults();
 
         // assert
@@ -149,7 +169,7 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
         $this->assertEquals(count($mock_farm_util->receivedPageWriteCalls),1);
         $this->assertEquals(array(
             'animal' => 'testanimal',
-            'page' => 'test:page_successfulMerge',
+            'page' => 'test:page_successfulmerge',
             'content' => "ABCX\n\nDEFY\n",
             'timestamp' => null
         ),$mock_farm_util->receivedPageWriteCalls[0]);
@@ -158,22 +178,25 @@ class pageUpdate_farmsync_test extends \DokuWikiTest {
 
     public function test_updateAnimal_mergeConflicts() {
         // arrange
-        $testpage = 'test:page_successfulMerge';
-        saveWikiText($testpage,"ABCX\n\nDEF\n","");
-        touch(wikiFN($testpage),1400000000);
+        $testpage = 'test:page_mergeconflict';
+        $sourcedir = substr(DOKU_TMP_DATA, 0, -1) . '_sourcePageUpdate/';
+        $sourceanimal = 'sourceanimal';
+        io_saveFile($sourcedir . "pages/test/page_mergeconflict.txt", "ABCX\n\nDEF\n");
+        touch($sourcedir . 'pages/test/page_mergeconflict.txt',1400000000);
         $mock_farm_util = new mock\FarmSyncUtil();
+        $mock_farm_util->setAnimalDataDir($sourceanimal, $sourcedir);
         $mock_farm_util->setPageExists('testanimal',$testpage,true);
         $mock_farm_util->setPagemtime('testanimal',$testpage,1400000001);
         $mock_farm_util->setPageContent('testanimal',$testpage,"ABCY\n\nDEF\n");
-        $mock_farm_util->setCommonAncestor('testanimal', $testpage, "ABC\n\nDEF\n");
+        $mock_farm_util->setCommonAncestor($sourceanimal,'testanimal', $testpage, "ABC\n\nDEF\n");
         /** @var \admin_plugin_farmsync $admin */
         $admin = plugin_load('admin','farmsync');
         $admin->farm_util = $mock_farm_util;
 
 
         // act
-        $admin->updatePage($testpage,'testanimal');
-        /** @var \updateResults[] $updated_pages */
+        $admin->updatePage($testpage, $sourceanimal, 'testanimal');
+        /** @var \dokuwiki\plugin\farmsync\meta\UpdateResults[] $updated_pages */
         $updated_pages = $admin->getUpdateResults();
 
         // assert

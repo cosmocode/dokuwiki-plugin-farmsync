@@ -42,7 +42,7 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
         $event->preventDefault();
         $event->stopPropagation();
 
-        global $INPUT, $conf;
+        global $INPUT;
 
         $sectok = $INPUT->str('sectok');
         if (!checkSecurityToken($sectok)) {
@@ -50,22 +50,14 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
             return;
         }
 
-        $animal = $INPUT->str('farmsync-animal');
+        $target = $INPUT->str('farmsync-animal');
         $page = $INPUT->str('farmsync-page');
         $source = $INPUT->str('farmsync-source');
 
-        if($source !== 'Farmer') {
-            $sourcedir = $this->farm_util->getAnimalDataDir($source);
-            $conf['datadir'] = $sourcedir . 'pages/';
-            $conf['olddir'] = $sourcedir . 'attic/';
-            $conf['mediadir'] = $sourcedir . 'media/';
-            $conf['mediaolddir'] = $sourcedir . 'media_attic/';
-        }
-
         if ($INPUT->has('farmsync-getdiff')) {
-            $remoteText = $this->farm_util->readRemotePage($animal, $page, false);
-            $localText = io_readFile(wikiFN($page, null, false));
-            $diff = new \Diff(explode("\n", $remoteText), explode("\n", $localText));
+            $targetText = $this->farm_util->readRemotePage($target, $page, false);
+            $sourceText = $this->farm_util->readRemotePage($source, $page, false);
+            $diff = new \Diff(explode("\n", $targetText), explode("\n", $sourceText));
             $diffformatter = new \TableDiffFormatter();
             $result =  '<table class="diff">';
             $result .=  '<tr>';
@@ -80,14 +72,14 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
 
         if (!$INPUT->has('farmsync-content')) {
             if ($INPUT->str('farmsync-type') == 'media') {
-                $this->farm_util->saveRemoteMedia($animal, $page);
+                $this->farm_util->saveRemoteMedia($source, $target, $page);
             } elseif ($INPUT->str('farmsync-type') == 'page') {
-                $this->overwriteRemotePage($animal, $page);
+                $this->overwriteRemotePage($source, $target, $page);
             } else {
-                $remoteFN = $this->farm_util->getRemoteFilename($animal,$page, null, false);
-                $localFN = wikiFN($page, null, false);
+                $targetFN = $this->farm_util->getRemoteFilename($target,$page, null, false);
+                $sourceFN = $this->farm_util->getRemoteFilename($source,$page, null, false);
 
-                $this->farm_util->replaceRemoteFile($remoteFN, io_readFile($localFN), filemtime($localFN));
+                $this->farm_util->replaceRemoteFile($targetFN, io_readFile($sourceFN), filemtime($sourceFN));
             }
             $this->sendResponse(200,"");
             return;
@@ -95,7 +87,7 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
 
         if ($INPUT->has('farmsync-content')) {
             $content = $INPUT->str('farmsync-content');
-            $this->writeManualMerge($animal, $page, $content);
+            $this->writeManualMerge($source, $target, $page, $content);
             $this->sendResponse(200, "");
             return;
         }
@@ -113,18 +105,18 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
         echo $json->encode($msg);
     }
 
-    public function overwriteRemotePage($animal, $page) {
-        $localModTime = filemtime(wikiFN($page));
-        $this->farm_util->saveRemotePage($animal, $page, io_readFile(wikiFN($page)), $localModTime);
+    public function overwriteRemotePage($source, $target, $page) {
+        $sourceModTime = $this->farm_util->getRemoteFilemtime($source, $page);
+        $this->farm_util->saveRemotePage($target, $page, $this->farm_util->readRemotePage($source, $page), $sourceModTime);
     }
 
-    public function writeManualMerge($animal, $page, $content) {
+    public function writeManualMerge($source, $target, $page, $content) {
         global $INPUT;
-        $localModTime = filemtime(wikiFN($page));
-        $remoteArchiveFileName = $this->farm_util->getRemoteFilename($animal, $page, $localModTime);
-        $changelogline = join("\t",array($localModTime, clientIP(true), DOKU_CHANGE_TYPE_MINOR_EDIT, $page, $INPUT->server->str('REMOTE_USER'), "Revision inserted due to manual merge"));
-        $this->farm_util->addRemotePageChangelogRevision($animal, $page, $changelogline, false);
-        $this->farm_util->replaceRemoteFile($remoteArchiveFileName, io_readFile(wikiFN($page)));
-        $this->farm_util->saveRemotePage($animal, $page, $content);
+        $sourceModTime = $this->farm_util->getRemoteFilemtime($source, $page);
+        $targetArchiveFileName = $this->farm_util->getRemoteFilename($target, $page, $sourceModTime);
+        $changelogline = join("\t",array($sourceModTime, clientIP(true), DOKU_CHANGE_TYPE_MINOR_EDIT, $page, $INPUT->server->str('REMOTE_USER'), "Revision inserted due to manual merge"));
+        $this->farm_util->addRemotePageChangelogRevision($target, $page, $changelogline, false);
+        $this->farm_util->replaceRemoteFile($targetArchiveFileName, $this->farm_util->readRemotePage($source, $page));
+        $this->farm_util->saveRemotePage($target, $page, $content);
     }
 }

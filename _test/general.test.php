@@ -42,11 +42,11 @@ class general_plugin_farmsync_test extends \DokuWikiTest {
 
         if (gettype($conf) != 'NULL' && gettype($meta) != 'NULL') {
             foreach($conf as $key => $value) {
-                $this->assertTrue(array_key_exists($key, $meta), 'Key $meta[\'' . $key . '\'] missing in ' . DOKU_PLUGIN . 'skilltagicon/conf/metadata.php');
+                $this->assertTrue(array_key_exists($key, $meta), 'Key $meta[\'' . $key . '\'] missing in ' . DOKU_PLUGIN . 'farmsync/conf/metadata.php');
             }
 
             foreach($meta as $key => $value) {
-                $this->assertTrue(array_key_exists($key, $conf), 'Key $conf[\'' . $key . '\'] missing in ' . DOKU_PLUGIN . 'skilltagicon/conf/default.php');
+                $this->assertTrue(array_key_exists($key, $conf), 'Key $conf[\'' . $key . '\'] missing in ' . DOKU_PLUGIN . 'farmsync/conf/default.php');
             }
         }
 
