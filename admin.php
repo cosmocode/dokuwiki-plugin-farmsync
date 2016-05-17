@@ -56,7 +56,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
     protected function updatePages($pagelines, $source, $targets) {
         $pages = array();
         foreach ($pagelines as $line) {
-            $pages = array_merge($pages, $this->getDocumentsFromLine($line));
+            $pages = array_merge($pages, $this->getDocumentsFromLine($source, $line));
         }
         array_unique($pages);
         $total = count($targets);
@@ -73,7 +73,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
     function updateTemplates($pagelines, $source, $targets) {
         $templates = array();
         foreach ($pagelines as $line) {
-            $templates = array_merge($templates, $this->getDocumentsFromLine($line, 'template'));
+            $templates = array_merge($templates, $this->getDocumentsFromLine($source, $line, 'template'));
         }
         array_unique($templates);
         $total = count($targets);
@@ -94,7 +94,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
     private function updateMedia($medialines, $source, $targets) {
         $media = array();
         foreach ($medialines as $line) {
-            $media = array_merge($media, $this->getDocumentsFromLine($line, 'media'));
+            $media = array_merge($media, $this->getDocumentsFromLine($source, $line, 'media'));
         }
         array_unique($media);
         $total = count($targets);
@@ -114,11 +114,16 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
      *
      * @return string[]
      */
-    public function getDocumentsFromLine($line, $type = 'page') {
+    public function getDocumentsFromLine($source, $line, $type = 'page') {
         if (trim($line) == '') return array();
-        $cleanline = str_replace('/',':', $line);
-        $namespace = join(':', explode(':',$cleanline, -1));
-        $documentdir = dirname($type == 'media' ? mediaFN($cleanline, null, false) : wikiFN($cleanline, null, false));
+        $cleanline = str_replace('/', ':', $line);
+        $namespace = join(':', explode(':', $cleanline, -1));
+        if ($type == 'media') {
+            $documentdir = dirname($this->farm_util->getRemoteMediaFilename($source, $cleanline, 0, false));
+        } else {
+            $documentdir = dirname($this->farm_util->getRemoteFilename($source, $cleanline, null, false));
+        }
+
         $search_algo = ($type == 'page') ? 'search_allpages' : (($type == 'media') ? 'search_media' : '');
         $documents = array();
 
@@ -136,21 +141,21 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             }, $nsfiles);
         } else {
             $document = $cleanline;
-            if ($type == 'page' && substr(noNS($document),0,1) == '_') return array();
-            if ($type == 'template' && substr(noNS($document),0,1) != '_') return array();
-            if ($type == 'page' && in_array(substr($document,-1), array(':', ';'))){
-                $document = $this->handleStartpage($document);
+            if ($type == 'page' && substr(noNS($document), 0, 1) == '_') return array();
+            if ($type == 'template' && substr(noNS($document), 0, 1) != '_') return array();
+            if ($type == 'page' && in_array(substr($document, -1), array(':', ';'))) {
+                $document = $this->handleStartpage($source, $document);
             }
-            if ($type == 'page' && !page_exists($document)) {
-                msg("Page $document does not exist in source wiki!",-1);
+            if ($type == 'page' && !$this->farm_util->remotePageExists($source, $document)) {
+                msg("Page $document does not exist in source wiki!", -1);
                 return array();
             }
-            if ($type == 'template' && !page_exists($document, null, false)) {
-                msg("Template $document does not exist in source wiki!",-1);
+            if ($type == 'template' && !$this->farm_util->remotePageExists($source, $document, false)) {
+                msg("Template $document does not exist in source wiki!", -1);
                 return array();
             }
-            if ($type == 'media' && (!file_exists(mediaFN($document)) || is_dir(mediaFN($document)))) {
-                msg("Media-file $document does not exist in source wiki!",-1);
+            if ($type == 'media' && (!$this->farm_util->remoteMediaExists($source, $document)) || is_dir(mediaFN($document))) {
+                msg("Media-file $document does not exist in source wiki!", -1);
                 return array();
             }
             $documents[] = $type != 'template' ? cleanID($document) : $document;
@@ -488,18 +493,18 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
 
 
     /**
-     * @param string  $page
+     * @param string $page
      * @return string
      */
-    protected function handleStartpage($page) {
+    protected function handleStartpage($source, $page) {
         global $conf;
-        if (page_exists($page . $conf['start'])) {
+        if ($this->farm_util->remotePageExists($source, $page . $conf['start'])) {
             $page = $page . $conf['start'];
             return $page;
-        } elseif (page_exists($page . noNS(cleanID($page)))) {
+        } elseif ($this->farm_util->remotePageExists($source, $page . noNS(cleanID($page)))) {
             $page = $page . noNS(cleanID($page));
             return $page;
-        } elseif (page_exists($page)) {
+        } elseif ($this->farm_util->remotePageExists($source, $page)) {
             return cleanID($page);
         } else {
             $page = $page . $conf['start'];

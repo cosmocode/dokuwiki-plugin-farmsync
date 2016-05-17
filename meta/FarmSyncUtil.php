@@ -160,7 +160,7 @@ class FarmSyncUtil {
      * @param int $timestamp
      * @return string
      */
-    public function getRemoteMediaFilename($animal, $media, $timestamp = 0) {
+    public function getRemoteMediaFilename($animal, $media, $timestamp = 0, $clean = true) {
         global $conf;
         $animaldir = $this->getAnimalDataDir($animal);
         $source_mediaolddir = $conf['mediaolddir'];
@@ -168,7 +168,7 @@ class FarmSyncUtil {
         $source_mediadir = $conf['mediadir'];
         $conf['mediadir'] = $animaldir . 'media';
 
-        $mediaFN = mediaFN($media, $timestamp);
+        $mediaFN = mediaFN($media, $timestamp, $clean);
 
         $conf['mediaolddir'] = $source_mediaolddir;
         $conf['mediadir'] = $source_mediadir;

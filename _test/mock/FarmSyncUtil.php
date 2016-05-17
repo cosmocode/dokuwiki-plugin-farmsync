@@ -33,9 +33,8 @@ class FarmSyncUtil extends \dokuwiki\plugin\farmsync\meta\FarmSyncUtil {
     }
 
 
-    public function remotePageExists($animal, $page, $clean = true)
-    {
-        return $this->remoteData[$animal][$page]['exists'];
+    public function remotePageExists($animal, $page, $clean = true) {
+        return isset($this->remoteData[$animal][$page]['exists']) ? $this->remoteData[$animal][$page]['exists'] : parent::remotePageExists($animal, $page, $clean);
     }
 
     public function replaceRemoteFile($remoteFile, $content, $timestamp = 0)
