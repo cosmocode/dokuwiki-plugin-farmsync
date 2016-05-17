@@ -97,7 +97,6 @@ jQuery(function(){
 
     var scrollToConflict = function ($event) {
         var line = Number(jQuery(this).data('line'));
-        console.log(line);
         var $form = jQuery(this).closest('form');
         $form.find('textarea[name=editarea]').scrollToLine(line);
         generateConflictLinks($form);

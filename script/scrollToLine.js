@@ -40,7 +40,6 @@
                 $copyDiv.remove();
 
             }catch(err){
-                console.log(err);
                 console.dir(err);
             }
         });
