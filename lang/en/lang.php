@@ -21,8 +21,13 @@ $lang['legend:choose source'] = 'Source from which to update';
 $lang['legend:choose animals'] = 'Animals to update';
 $lang['legend:choose documents'] = 'Documents to update';
 
+$lang['label:source'] = 'Source';
 $lang['label:PageEntry'] = 'Pages/Namespaces to update';
 $lang['label:MediaEntry'] = "Media/Media-Namespaces to update";
+
+$lang['progress:pages'] = 'Pages of <b>%s</b>(%s/%s) are done';
+$lang['progress:templates'] = 'Templates of <b>%s</b>(%s/%s) are done';
+$lang['progress:media'] = 'Media-files of <b>%s</b>(%s/%s) are done';
 
 $lang['mergeresult:new file'] = 'is new file';
 $lang['mergeresult:file overwritten'] = 'was overwritten';
@@ -36,6 +41,7 @@ $lang['button:keep'] = "Keep theirs";
 $lang['button:overwrite'] = "Overwrite theirs";
 $lang['button:edit'] = "Edit";
 $lang['button:diff'] = "Show diff";
+$lang['button:submit'] = "Submit";
 
 $lang['link:nocoflictitems'] = 'Toggle nonconflicting items';
 $lang['link:srcversion'] = 'Source Version';
@@ -43,5 +49,7 @@ $lang['link:dstversion'] = 'Target Version';
 
 $lang['diff:animal'] = "Page currently at Animal";
 $lang['diff:source'] = "Page to be copied from Source";
+
+$lang['js']['done'] = 'Done!';
 
 //Setup VIM: ex: et ts=4 :

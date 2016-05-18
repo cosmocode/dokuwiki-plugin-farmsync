@@ -66,7 +66,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 $this->updatePage($page, $source, $target);
             }
             $i += 1;
-            echo "Pages of $target($i/$total) are done</br>";
+            echo sprintf($this->getLang('progress:pages'), $target, $i, $total) . "</br>";
         }
     }
 
@@ -83,7 +83,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 $this->updateTemplate($template, $source, $target);
             }
             $i += 1;
-            echo "Templates of $target($i/$total) are done</br>";
+            echo sprintf($this->getLang('progress:templates'), $target, $i, $total) . "</br>";
         }
     }
 
@@ -104,7 +104,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 $this->updateMedium($medium, $source, $target);
             }
             $i += 1;
-            echo "Media-files of $target($i/$total) are done</br>";
+            echo sprintf($this->getLang('progress:media'), $target, $i, $total) . "</br>";
         }
     }
 
@@ -359,7 +359,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             $animals = $this->farm_util->getAllAnimals();
             $form = new Form();
             $form->addFieldsetOpen($this->getLang('legend:choose source'));
-            $form->addDropdown('farmsync[source]', $animals, 'Source')->addClass('make_chosen');
+            $form->addDropdown('farmsync[source]', $animals, $this->getLang('label:source'))->addClass('make_chosen');
             $form->addFieldsetClose();
             $form->addFieldsetOpen($this->getLang('legend:choose documents'));
             $form->addTextarea('farmsync[pages]', $this->getLang('label:PageEntry'));
@@ -371,7 +371,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 $form->addCheckbox('farmsync-animals[' . $animal . ']', $animal);
             }
             $form->addFieldsetClose();
-            $form->addButton('submit', 'Submit');
+            $form->addButton('submit', $this->getLang('button:submit'));
 
             echo $form->toHTML();
             echo $this->locale_xhtml('update');

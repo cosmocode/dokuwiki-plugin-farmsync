@@ -60,7 +60,7 @@ jQuery(function(){
         var $conflicts = $this.closest('div.result').find('h2 span');
         $conflicts.html(Number($conflicts.html()) - 1);
         if (Number($conflicts.html()) === 0) $this.closest('div.result').switchClass('withconflicts','noconflicts');
-        $this.replaceWith('<span>Done!</span>');
+        $this.replaceWith('<span>'+ LANG.plugins.farmsync['done'] +'</span>');
         jQuery('form[data-animal="' + animal + '"][data-page="' + page + '"] button').hide();
     });
     $farmsync.find('form button[name=override]').click(function(event) {
@@ -87,7 +87,7 @@ jQuery(function(){
             var $conflicts = $this.closest('div.result').find('h2 span');
             $conflicts.html(Number($conflicts.html()) - 1);
             if (Number($conflicts.html()) === 0) $this.closest('div.result').switchClass('withconflicts','noconflicts');
-            $this.replaceWith('<span>Done!</span>');
+            $this.replaceWith('<span>'+ LANG.plugins.farmsync['done'] +'</span>');
         }).fail(function (jqXHR, textStatus, errorThrown) {
             $this.replaceWith('<span>Failure! ' + textStatus + ' ' + errorThrown + '</span>');
             console.dir(jqXHR);
@@ -176,7 +176,7 @@ jQuery(function(){
             var $conflicts = $form.closest('div.result').find('h2 span');
             $conflicts.html(Number($conflicts.html()) - 1);
             if (Number($conflicts.html()) === 0) $form.closest('div.result').switchClass('withconflicts','noconflicts');
-            $form.replaceWith('<span>Done!</span>');
+            $form.replaceWith('<span>'+ LANG.plugins.farmsync['done'] +'</span>');
         }).fail(function (jqXHR, textStatus, errorThrown) {
             $form.replaceWith('<span>Failure! ' + textStatus + ' ' + errorThrown + '</span>');
             console.dir(jqXHR);
