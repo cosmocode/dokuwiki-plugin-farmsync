@@ -416,7 +416,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 }
                 echo "<div class='result $class'><h2>" . $heading . "</h2>";
                 echo "<div>";
-                echo "<h3>Pages</h3>";
+                echo "<h3>".$this->getLang('heading:pages')."</h3>";
                 if ($pageconflicts > 0) {
                     echo "<ul>";
                     foreach ($results['pages']['failed'] as $result) {
@@ -438,7 +438,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                     echo "</ul>";
                 }
 
-                echo "<h3>Templates</h3>";
+                echo "<h3>".$this->getLang('heading:templates')."</h3>";
                 if ($templateconflicts > 0) {
                     echo "<ul>";
                     foreach ($results['templates']['failed'] as $result) {
@@ -460,7 +460,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                     echo "</ul>";
                 }
 
-                echo "<h3>Media</h3>";
+                echo "<h3>".$this->getLang('heading:media')."</h3>";
                 if ($mediaconflicts > 0) {
                     echo "<ul>";
                     foreach ($results['media']['failed'] as $result) {

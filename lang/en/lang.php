@@ -16,6 +16,9 @@ $lang['heading:Update done'] = 'Finished updating the animals:';
 $lang['heading:animal noconflict'] = '%s: updated without conflicts';
 $lang['heading:animal conflict'] = '%s: <span>%d</span> conflicts to solve';
 $lang['heading:conflicts'] = 'Remaining Conflicts:';
+$lang['heading:templates'] = 'Templates';
+$lang['heading:pages'] = 'Pages';
+$lang['heading:media'] = 'Media';
 
 $lang['legend:choose source'] = 'Source from which to update';
 $lang['legend:choose animals'] = 'Animals to update';

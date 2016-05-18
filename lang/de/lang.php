@@ -6,16 +6,19 @@
  */
 
 // menu entry for admin plugins
-$lang['menu'] = 'Farming-Updates';
+$lang['menu'] = 'Farm-Aktualisierungen';
 
-$lang['merge_animal'] = 'The conflicting text in the animal.';
-$lang['merge_source'] = 'The conflicting text in the source.';
+$lang['merge_animal'] = 'Die in Konflikt stehende Stelle im Ziel-Animal.';
+$lang['merge_source'] = 'Die in Konflikt stehende Stelle im Quell-Animal.';
 
-$lang['heading:Update animals'] = 'Update pages and media in farm animals';
+$lang['heading:Update animals'] = 'Seiten, Vorlagen und Medien in Farm Animals aktualisieren';
 $lang['heading:Update done'] = 'Aktualisierung der Animals beendet:';
 $lang['heading:animal noconflict'] = '%s: wurde ohne Konflikte aktualisiert';
 $lang['heading:animal conflict'] = '%s: <span>%d</span> Konflikte zu lösen';
 $lang['heading:conflicts'] = 'Verbleibende Konflikte:';
+$lang['heading:templates'] = 'Vorlagen';
+$lang['heading:pages'] = 'Seiten';
+$lang['heading:media'] = 'Medien';
 
 $lang['legend:choose source'] = 'Quelle der Aktualisierung';
 $lang['legend:choose animals'] = 'Animals die aktualisiert werden sollen';
