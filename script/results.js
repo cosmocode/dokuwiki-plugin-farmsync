@@ -8,7 +8,13 @@ jQuery(function(){
         $farmsync.find('div.progress').slideToggle();
     });
 
-    $farmsync.find('select.make_chosen').chosen();
+    $farmsync.find('select.make_chosen').chosen().change(function() {
+        var $this = jQuery(this);
+        $this.trigger('chosen:updated');
+        $this.val();
+        $farmsync.find('input[type="checkbox"]').prop('disabled', false);
+        $farmsync.find('input[type="checkbox"][name="farmsync-animals['+$this.val()+']"]').prop('disabled', true).prop('checked', false);
+    }).change();
 
     $farmsync.find('div.result h2').click(function (event) {
         jQuery(this).next('div').slideToggle()
