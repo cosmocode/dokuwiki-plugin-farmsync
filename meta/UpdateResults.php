@@ -52,14 +52,14 @@ class UpdateResults {
     }
 
     /**
-     * @return MergeResult
+     * @return string
      */
     public function getMergeResult() {
         return $this->_mergeResult;
     }
 
     /**
-     * @param MergeResult $mergeResult
+     * @param string $mergeResult
      */
     public function setMergeResult($mergeResult) {
         $this->_mergeResult = $mergeResult;
