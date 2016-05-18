@@ -16,7 +16,6 @@ use dokuwiki\plugin\farmsync\meta\UpdateResults;
 use dokuwiki\plugin\farmsync\meta\PageConflict;
 use dokuwiki\plugin\farmsync\meta\MediaConflict;
 use dokuwiki\plugin\farmsync\meta\TemplateConflict;
-use dokuwiki\plugin\farmsync\meta\MergeResult;
 
 class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
 
