@@ -65,6 +65,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 $this->updatePage($page, $source, $target);
             }
             $i += 1;
+            $this->farm_util->clearAnimalCache($target);
             echo sprintf($this->getLang('progress:pages'), $target, $i, $total) . "</br>";
         }
     }
@@ -82,6 +83,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 $this->updateTemplate($template, $source, $target);
             }
             $i += 1;
+            $this->farm_util->clearAnimalCache($target);
             echo sprintf($this->getLang('progress:templates'), $target, $i, $total) . "</br>";
         }
     }
@@ -103,6 +105,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 $this->updateMedium($medium, $source, $target);
             }
             $i += 1;
+            $this->farm_util->clearAnimalCache($target);
             echo sprintf($this->getLang('progress:media'), $target, $i, $total) . "</br>";
         }
     }

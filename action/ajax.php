@@ -80,6 +80,7 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
 
                 $this->farm_util->replaceRemoteFile($targetFN, io_readFile($sourceFN), filemtime($sourceFN));
             }
+            $this->farm_util->clearAnimalCache($target);
             $this->sendResponse(200, "");
             return;
         }
@@ -87,6 +88,7 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
         if ($INPUT->has('farmsync-content')) {
             $content = $INPUT->str('farmsync-content');
             $this->writeManualMerge($source, $target, $page, $content);
+            $this->farm_util->clearAnimalCache($target);
             $this->sendResponse(200, "");
             return;
         }

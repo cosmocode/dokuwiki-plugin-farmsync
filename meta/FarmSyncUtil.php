@@ -39,11 +39,20 @@ class FarmSyncUtil {
      * @return string
      */
     public function getAnimalDataDir($animal) {
-        return DOKU_FARMDIR . $animal . '/data/';
+        return $this->getAnimalDir($animal) . 'data/';
+    }
+
+    public function getAnimalDir($animal) {
+        return DOKU_FARMDIR . $animal . '/';
     }
 
     public function getAnimalLink($animal) {
         return $this->farmer->getAnimalURL($animal);
+    }
+
+    public function clearAnimalCache($animal) {
+        $animalDir = $this->getAnimalDir($animal);
+        touch($animalDir.'conf/local.php');
     }
 
     /**
