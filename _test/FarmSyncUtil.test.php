@@ -31,4 +31,16 @@ class farymsyncutil_farmsync_test extends \DokuWikiTest {
         $this->assertEquals("/testfarmdir/testanimal/data/pages/start.txt", $actual_fn);
     }
 
+    public function test_remoteFilenames_between_animals_unclean() {
+        // arrange
+        $farm_util = new \dokuwiki\plugin\farmsync\meta\FarmSyncUtil();
+
+        // act
+        $farm_util->getRemoteFilename('otheranimal', ':start', null, false);
+        $actual_fn = $farm_util->getRemoteFilename('testanimal', ':start', null, false);
+
+        // assert
+        $this->assertEquals("/testfarmdir/testanimal/data/pages//start.txt", $actual_fn);
+    }
+
 }

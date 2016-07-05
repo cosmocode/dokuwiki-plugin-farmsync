@@ -168,9 +168,9 @@ class FarmSyncUtil {
         $source_olddir = $conf['olddir'];
         $conf['olddir'] = $remoteDataDir . 'attic';
 
-        unset($cache_wikifn[str_replace(':', '/', trim($document, ':'))]);
+        unset($cache_wikifn[str_replace(':', '/', $clean ? cleanID($document) : $document)]);
         $FN = wikiFN($document, $timestamp, $clean);
-        unset($cache_wikifn[str_replace(':', '/', trim($document, ':'))]);
+        unset($cache_wikifn[str_replace(':', '/', $clean ? cleanID($document) : $document)]);
 
         $conf['datadir'] = $source_datadir;
         $conf['olddir'] = $source_olddir;
