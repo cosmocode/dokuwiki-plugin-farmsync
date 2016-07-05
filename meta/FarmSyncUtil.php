@@ -123,7 +123,7 @@ class FarmSyncUtil {
      * @return string
      */
     public function readRemoteMedia($animal, $media, $timestamp = 0) {
-        return io_readFile($this->getRemoteMediaFilename($animal, $media, $timestamp));
+        return io_readFile($this->getRemoteMediaFilename($animal, $media, $timestamp), false);
     }
 
     /**
