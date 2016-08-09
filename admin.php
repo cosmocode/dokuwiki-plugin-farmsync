@@ -36,6 +36,9 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
     private $update_results;
     public $farm_util;
 
+    /** @var \helper_plugin_struct_imexport $struct */
+    private $struct;
+
     function __construct() {
         $this->farm_util = new FarmSyncUtil();
         $this->update_results = array();
@@ -45,6 +48,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
      * Should carry out any processing required by the plugin.
      */
     public function handle() {
+        $this->struct = plugin_load('helper', 'struct_imexport');
     }
 
     /**
@@ -367,6 +371,12 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             $form->addTextarea('farmsync[pages]', $this->getLang('label:PageEntry'));
             $form->addHTML("<br>");
             $form->addTextarea('farmsync[media]', $this->getLang('label:MediaEntry'));
+            $form->addHTML("<br>");
+            if(!empty($this->struct)) {
+                $form->addCheckbox('farmsync[struct]', 'Synchronize struct data?'); // Fixme LANG
+                $form->addTagOpen('div')->addClass('structsync')->attr('style','display: none;');
+                $form->addTagClose('div');
+            }
             $form->addFieldsetClose();
             $form->addFieldsetOpen($this->getLang('legend:choose animals'));
             foreach ($animals as $animal) {
@@ -386,6 +396,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             $textare_linebreak = "\r\n";
             $pages = explode($textare_linebreak, $options['pages']);
             $media = explode($textare_linebreak, $options['media']);
+            $struct = array_keys($INPUT->arr('farmsync_struct'));
             $source = $options['source']; // ToDo: validate thath source exists
             echo "<div id=\"plugin__farmsync\"><div id=\"results\" data-source='$options[source]'>";
             echo "<span class='progress'>Progress and Errors</span>";
@@ -393,6 +404,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             $this->updatePages($pages, $source, $targets);
             $this->updateTemplates($pages, $source, $targets);
             $this->updateMedia($media, $source, $targets);
+            $this->updateStruct($struct, $source, $targets);
             echo "</div>";
             echo "<h1>" . $this->getLang('heading:Update done') . "</h1>";
             /** @var UpdateResults $result */
@@ -516,6 +528,38 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
      */
     public function getUpdateResults() {
         return $this->update_results;
+    }
+
+    private function updateStruct($struct, $source, $targets) {
+        if (empty($struct)) {
+            return;
+        }
+
+        $schemas = array();
+        $assignments = array();
+        foreach ($struct as $entry) {
+            list ($operation, $schema) = explode('_', $entry, 2);
+            if ($operation == 'assign') {
+                $assignments[] = $schema;
+            }
+            if ($operation == 'schema') {
+                $schemas[] = $schema;
+            }
+        }
+        var_dump($assignments);
+
+        $assignments = $this->farm_util->getAnimalStructAssignments($source, $assignments);
+        var_dump($assignments);
+        $this->farm_util->replaceAnimalStructAssignments($targets[0], $assignments);
+        // recalculate target assignments
+
+
+//        var_dump($schemas);
+        // get newest source
+        // if schema does not exist at target, copy newest version from source to target -> end
+        // try to find newest common ancestor of source and target schema
+        // if there is no newer version at source than newest common ancestor, copy newest version from source to target -> end
+        // we have conflict
     }
 }
 

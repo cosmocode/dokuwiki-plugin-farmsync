@@ -351,9 +351,63 @@ class FarmSyncUtil {
         return ((string)(int)$timestamp === (string)$timestamp);
     }
 
+    public function getAllStructSchemasList($animal) {
+        /** @var \helper_plugin_struct_imexport $struct */
+        $struct = plugin_load('helper', 'struct_imexport');
+        if (empty($struct)) {
+            return array();
+        }
+        global $conf;
 
+        $remoteDataDir = $this->getAnimalDataDir($animal);
+        $farmer_metadir = $conf['metadir'];
+        $conf['metadir'] = $remoteDataDir . 'meta';
+        $schemas = $struct->getAllSchemasList();
+        $conf['metadir'] = $farmer_metadir;
+        return $schemas;
+    }
 
+    public function getAnimalStructAssignments($source, $schemas) {
+        /** @var \helper_plugin_struct_imexport $struct */
+        $struct = plugin_load('helper', 'struct_imexport');
+        if (empty($struct)) {
+            return array();
+        }
+        global $conf;
 
+        $remoteDataDir = $this->getAnimalDataDir($source);
+        $farmer_metadir = $conf['metadir'];
+        $conf['metadir'] = $remoteDataDir . 'meta';
+        foreach ($schemas as $key => $assignment) {
+            $schemas[$assignment] = $struct->getSchemaAssignmentPatterns($assignment);
+            unset($schemas[$key]);
+        }
+        $conf['metadir'] = $farmer_metadir;
+        return $schemas;
+
+    }
+
+    /**
+     * @param $int
+     * @param $assignments
+     */
+    public function replaceAnimalStructAssignments($target, $assignments) {
+        /** @var \helper_plugin_struct_imexport $struct */
+        $struct = plugin_load('helper', 'struct_imexport');
+        if (empty($struct)) {
+            return array();
+        }
+        global $conf;
+
+        $remoteDataDir = $this->getAnimalDataDir($target);
+        $farmer_metadir = $conf['metadir'];
+        $conf['metadir'] = $remoteDataDir . 'meta';
+        var_dump($conf['metadir']);
+        foreach ($assignments as $schema => $patterns) {
+            $struct->replaceSchemaAssignmentPatterns($schema, $patterns);
+        }
+        $conf['metadir'] = $farmer_metadir;
+    }
 
 
 }

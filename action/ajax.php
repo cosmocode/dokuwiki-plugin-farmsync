@@ -8,6 +8,7 @@
 
 if (!defined('DOKU_INC')) die();
 
+use dokuwiki\Form\Form;
 use dokuwiki\plugin\farmsync\meta\FarmSyncUtil;
 
 class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
@@ -34,7 +35,6 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
      * @param Doku_Event $event event object by reference
      * @param mixed $param [the parameters passed as fifth argument to register_hook() when this
      *                           handler was registered]
-     * @return bool
      */
     public function handle_ajax(Doku_Event $event, $param) {
         if ($event->data != 'plugin_farmsync') return;
@@ -49,9 +49,29 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
             return;
         }
 
+
+
         $target = $INPUT->str('farmsync-animal');
         $page = $INPUT->str('farmsync-page');
         $source = $INPUT->str('farmsync-source');
+
+        if ($INPUT->has('farmsync-getstruct')) {
+            $schemas = $this->farm_util->getAllStructSchemasList($source);
+            $form = new Form();
+            $form->addTagOpen('div')->addClass('structsync');
+            foreach ($schemas as $schema) {
+                $form->addTagOpen('div')->addClass('lineradio');
+                $form->addHTML("<label>$schema[tbl]</label>");
+                $form->addTagOpen('div')->addClass('container');
+                $form->addCheckbox("farmsync_struct[schema_$schema[tbl]]", "Schema");
+                $form->addCheckbox("farmsync_struct[assign_$schema[tbl]]", "Replace assignments");
+                $form->addTagClose('div');
+                $form->addTagClose('div');
+            }
+            $form->addTagClose('div');
+            $this->sendResponse(200, $form->toHTML());
+            return;
+        }
 
         if ($INPUT->has('farmsync-getdiff')) {
             $targetText = $this->farm_util->readRemotePage($target, $page, false);
