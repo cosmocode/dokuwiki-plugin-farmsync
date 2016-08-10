@@ -388,26 +388,89 @@ class FarmSyncUtil {
     }
 
     /**
-     * @param $int
-     * @param $assignments
+     * @param string $target      target-animal
+     * @param array  $assignments
      */
     public function replaceAnimalStructAssignments($target, $assignments) {
         /** @var \helper_plugin_struct_imexport $struct */
         $struct = plugin_load('helper', 'struct_imexport');
         if (empty($struct)) {
-            return array();
+            //ToDo: Throw exception?
         }
         global $conf;
 
         $remoteDataDir = $this->getAnimalDataDir($target);
         $farmer_metadir = $conf['metadir'];
         $conf['metadir'] = $remoteDataDir . 'meta';
-        var_dump($conf['metadir']);
         foreach ($assignments as $schema => $patterns) {
             $struct->replaceSchemaAssignmentPatterns($schema, $patterns);
         }
         $conf['metadir'] = $farmer_metadir;
+        // ToDo: UpdateResult
     }
 
+    public function getAnimalStructSchemas($source, $schemas) {
+        /** @var \helper_plugin_struct_imexport $struct */
+        $struct = plugin_load('helper', 'struct_imexport');
+        if (empty($struct)) {
+            //ToDo: Throw exception?
+        }
+        global $conf;
+
+        $remoteDataDir = $this->getAnimalDataDir($source);
+        $farmer_metadir = $conf['metadir'];
+        $conf['metadir'] = $remoteDataDir . 'meta';
+        foreach ($schemas as $key => $schema) {
+            $schemas[$schema] = json_decode($struct->getCurrentSchemaJSON($schema));
+            $schemas[$schema]->user = 'FARMSYNC';
+            $schemas[$schema]->id = 0;
+            $schemas[$schema] = json_encode($schemas[$schema]);
+            unset($schemas[$key]);
+        }
+        $conf['metadir'] = $farmer_metadir;
+        return $schemas;
+    }
+
+    public function updateAnimalStructSchema($target, $schemaName, $json) {
+        global $conf;
+
+        $remoteDataDir = $this->getAnimalDataDir($target);
+        $farmer_metadir = $conf['metadir'];
+        $conf['metadir'] = $remoteDataDir . 'meta';
+
+        $result = $this->_updateAnimalStructSchema($target, $schemaName, $json);
+
+        $conf['metadir'] = $farmer_metadir;
+        return $result;
+    }
+
+    private function _updateAnimalStructSchema($target, $schemaName, $json) {
+        /** @var \helper_plugin_struct_imexport $struct */
+        $struct = plugin_load('helper', 'struct_imexport');
+        if (empty($struct)) {
+            //ToDo: Throw exception?
+        }
+        $result = new UpdateResults($schemaName, $target);
+        $targetSchema = json_decode($struct->getCurrentSchemaJSON($schemaName));
+
+        if ($targetSchema->id == 0) {
+            $struct->importSchema($schemaName, $json);
+            $result->setMergeResult('new file');
+            return $result;
+        }
+        if ($targetSchema->user == 'FARMSYNC') {
+            $targetSchema->id = 0;
+            if (json_encode($targetSchema) == $json) {
+                $result->setMergeResult('unchanged');
+                return $result;
+            }
+            $struct->importSchema($schemaName, $json);
+            $result->setMergeResult('file overwritten');
+            return $result;
+        }
+        $result = new StructConflict($schemaName, $target);
+        $result->setMergeResult('merged with conflicts');
+        return $result;
+    }
 
 }

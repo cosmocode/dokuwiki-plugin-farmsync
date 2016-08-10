@@ -412,21 +412,25 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 if (!isset($results['pages']['failed'])) $results['pages']['failed'] = array();
                 if (!isset($results['media']['failed'])) $results['media']['failed'] = array();
                 if (!isset($results['templates']['failed'])) $results['templates']['failed'] = array();
+                if (!isset($results['struct']['failed'])) $results['struct']['failed'] = array();
                 if (!isset($results['pages']['passed'])) $results['pages']['passed'] = array();
                 if (!isset($results['media']['passed'])) $results['media']['passed'] = array();
                 if (!isset($results['templates']['passed'])) $results['templates']['passed'] = array();
+                if (!isset($results['struct']['passed'])) $results['struct']['passed'] = array();
                 $pageconflicts = count($results['pages']['failed']);
                 $mediaconflicts = count($results['media']['failed']);
                 $templateconflicts = count($results['templates']['failed']);
+                $structconflicts = count($results['struct']['failed']);
                 $pagesuccess = count($results['pages']['passed']);
                 $mediasuccess = count($results['media']['passed']);
                 $templatesuccess = count($results['templates']['passed']);
-                if ($pageconflicts == 0 && $mediaconflicts == 0 && $templateconflicts == 0) {
+                $structsuccess = count($results['struct']['passed']);
+                if ($pageconflicts == 0 && $mediaconflicts == 0 && $templateconflicts == 0 && $structconflicts == 0) {
                     $class = 'noconflicts';
                     $heading = sprintf($this->getLang('heading:animal noconflict'), $animal);
                 } else {
                     $class = 'withconflicts';
-                    $heading = sprintf($this->getLang('heading:animal conflict'), $animal, $pageconflicts + $mediaconflicts + $templateconflicts);
+                    $heading = sprintf($this->getLang('heading:animal conflict'), $animal, $pageconflicts + $mediaconflicts + $templateconflicts + $structconflicts);
                 }
                 echo "<div class='result $class'><h2>" . $heading . "</h2>";
                 echo "<div>";
@@ -495,6 +499,29 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                     }
                     echo "</ul>";
                 }
+
+                echo "<h3>".$this->getLang('heading:struct')."struct heading</h3>";
+                if ($structconflicts > 0) {
+                    echo "<ul>";
+                    foreach ($results['struct']['failed'] as $result) {
+                        echo "<li class='level1'>";
+                        echo "<div class='li'>" . $result->getResultLine() . "</div>";
+                        echo "</li>";
+                    }
+                    echo "</ul>";
+                }
+
+                if ($structsuccess > 0) {
+                    echo '<a class="show_noconflicts wikilink1">' . $this->getLang('link:nocoflictitems') . '</a>';
+                    echo "<ul class='noconflicts'>";
+                    foreach ($results['struct']['passed'] as $result) {
+                        echo "<li class='level1'>";
+                        echo "<div class='li'>" . $result->getResultLine() . "</div>";
+                        echo "</li>";
+                    }
+                    echo "</ul>";
+                }
+
                 echo "</div>";
                 echo "</div>";
             }
@@ -546,20 +573,24 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                 $schemas[] = $schema;
             }
         }
-        var_dump($assignments);
 
         $assignments = $this->farm_util->getAnimalStructAssignments($source, $assignments);
-        var_dump($assignments);
         $this->farm_util->replaceAnimalStructAssignments($targets[0], $assignments);
-        // recalculate target assignments
+        // todo: results for assignments
 
+        $schemas = $this->farm_util->getAnimalStructSchemas($source, $schemas);
 
-//        var_dump($schemas);
-        // get newest source
-        // if schema does not exist at target, copy newest version from source to target -> end
-        // try to find newest common ancestor of source and target schema
-        // if there is no newer version at source than newest common ancestor, copy newest version from source to target -> end
-        // we have conflict
+        foreach ($targets as $target) {
+            foreach ($schemas as $schemaName => $json) {
+                $result = $this->farm_util->updateAnimalStructSchema($target, $schemaName, $json);
+                if (is_a($result, 'dokuwiki\plugin\farmsync\meta\StructConflict')) {
+                    $this->update_results[$target]['struct']['failed'][] = $result;
+                } else {
+                    $this->update_results[$target]['struct']['passed'][] = $result;
+                }
+            }
+            // todo: inrement counter
+        }
     }
 }
 
