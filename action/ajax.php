@@ -62,10 +62,10 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
             $form->addTagOpen('div')->addClass('structsync');
             foreach ($schemas as $schema) {
                 $form->addTagOpen('div')->addClass('lineradio');
-                $form->addHTML("<label>$schema[tbl]</label>");
+                $form->addHTML("<label>$schema</label>");
                 $form->addTagOpen('div')->addClass('container');
-                $form->addCheckbox("farmsync_struct[schema_$schema[tbl]]", "Schema");
-                $form->addCheckbox("farmsync_struct[assign_$schema[tbl]]", "Replace assignments");
+                $form->addCheckbox("farmsync_struct[schema_$schema]", "Schema");
+                $form->addCheckbox("farmsync_struct[assign_$schema]", "Replace assignments");
                 $form->addTagClose('div');
                 $form->addTagClose('div');
             }

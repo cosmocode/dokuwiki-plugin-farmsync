@@ -12,13 +12,12 @@ jQuery(function() {
                 'farmsync-getstruct': true
             }
         }).done(function (data) {
-            console.dir(data);
             jQuery('div.structsync').html(data);
             var checked = jQuery('input[name="farmsync[struct]"]').prop('checked');
             jQuery('div.structsync input[type=checkbox]').prop('checked', checked);
-        }).fail(function (code, textstatus, jqxhr) {
-            console.log(code);
-            console.log(textstatus);
+        }).fail(function (jqXHR, textStatus, errorThrown) {
+            jQuery('div.structsync').html('<span>Failure! ' + textStatus + ' ' + errorThrown + '</span><div>' + jqXHR.responseText + '</div>');
+            console.dir(jqXHR);
         });
     });
 
