@@ -31,6 +31,7 @@ $lang['label:MediaEntry'] = "Media/Media-Namespaces to update";
 $lang['progress:pages'] = 'Pages of <b>%s</b>(%s/%s) are done';
 $lang['progress:templates'] = 'Templates of <b>%s</b>(%s/%s) are done';
 $lang['progress:media'] = 'Media-files of <b>%s</b>(%s/%s) are done';
+$lang['progress:struct'] = 'Struct-data of <b>%s</b>(%s/%s) is done';
 
 $lang['mergeresult:new file'] = 'is new file';
 $lang['mergeresult:file overwritten'] = 'was overwritten';

@@ -30,7 +30,7 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
      * @return bool true if only access for superuser, false is for superusers and moderators
      */
     public function forAdminOnly() {
-        return false;
+        return true;
     }
 
     private $update_results;
@@ -573,14 +573,15 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
         }
 
         $assignments = $this->farm_util->getAnimalStructAssignments($source, $assignments);
-        $this->farm_util->replaceAnimalStructAssignments($targets[0], $assignments);
-        // todo: results for assignments
 
         $schemas = $this->farm_util->getAnimalStructSchemas($source, $schemas);
+        $total = count($targets);
+        $i = 0;
 
         foreach ($targets as $target) {
             $this->update_results[$target]['struct']['passed'] = array();
             $this->update_results[$target]['struct']['failed'] = array();
+            $this->farm_util->replaceAnimalStructAssignments($target, $assignments);
             foreach ($schemas as $schemaName => $json) {
                 $result = $this->farm_util->updateAnimalStructSchema($target, $schemaName, $json);
                 if (is_a($result, 'dokuwiki\plugin\farmsync\meta\StructConflict')) {
@@ -589,7 +590,8 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
                     $this->update_results[$target]['struct']['passed'][] = $result;
                 }
             }
-            // todo: inrement counter
+            $i += 1;
+            echo sprintf($this->getLang('progress:struct'), $target, $i, $total) . "</br>";
         }
     }
 }
