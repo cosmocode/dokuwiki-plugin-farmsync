@@ -431,6 +431,20 @@ class FarmSyncUtil {
         return $schemas;
     }
 
+    public function importAnimalStructSchema($target, $schemaName, $json) {
+        /** @var \helper_plugin_struct_imexport $struct */
+        $struct = plugin_load('helper', 'struct_imexport');
+        global $conf;
+
+        $remoteDataDir = $this->getAnimalDataDir($target);
+        $farmer_metadir = $conf['metadir'];
+        $conf['metadir'] = $remoteDataDir . 'meta';
+
+        $struct->importSchema($schemaName, $json);
+
+        $conf['metadir'] = $farmer_metadir;
+    }
+
     public function updateAnimalStructSchema($target, $schemaName, $json) {
         global $conf;
 

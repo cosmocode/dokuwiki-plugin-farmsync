@@ -47,7 +47,6 @@ jQuery(function(){
                 'farmsync-animal': animal,
                 'farmsync-page': page,
                 'farmsync-action': 'diff',
-                'farmsync-getdiff': true,
                 'sectok': sectok
             }
         ).done(function (data, textStatus, jqXHR) {
@@ -86,7 +85,7 @@ jQuery(function(){
                 'farmsync-animal': animal,
                 'farmsync-page': page,
                 'farmsync-action': 'overwrite',
-                'farmsync-ismedia': type,
+                'farmsync-type': type,
                 'sectok': sectok
             }
         ).done(function (data, textStatus, jqXHR) {
@@ -95,7 +94,7 @@ jQuery(function(){
             if (Number($conflicts.html()) === 0) $this.closest('div.result').switchClass('withconflicts','noconflicts');
             $this.replaceWith('<span>'+ LANG.plugins.farmsync['done'] +'</span>');
         }).fail(function (jqXHR, textStatus, errorThrown) {
-            $this.replaceWith('<span>Failure! ' + textStatus + ' ' + errorThrown + '</span>');
+            $this.replaceWith('<span>Failure! ' + textStatus + ' ' + errorThrown + '</span><div>' + jqXHR.responseText + '</div>');
             console.dir(jqXHR);
         });
         jQuery('form[data-animal="' + animal + '"][data-page="' + page + '"] button').hide();
@@ -165,6 +164,7 @@ jQuery(function(){
         }
         var animal = $form.data('animal');
         var page = $form.data('page');
+        var type = $this.parent('form').data('type') || 'page';
         var sectok = $form.find('input[name="sectok"]').val();
         var source = jQuery('#results').data('source');
         jQuery.post(
@@ -176,6 +176,7 @@ jQuery(function(){
                 'farmsync-page': page,
                 'farmsync-action': 'overwrite',
                 'farmsync-content': $content,
+                'farmsync-type': type,
                 'sectok': sectok
             }
         ).done(function (data, textStatus, jqXHR) {

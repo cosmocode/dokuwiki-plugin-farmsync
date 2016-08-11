@@ -54,6 +54,7 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
         $target = $INPUT->str('farmsync-animal');
         $page = $INPUT->str('farmsync-page');
         $source = $INPUT->str('farmsync-source');
+        $action = $INPUT->str('farmsync-action');
 
         if ($INPUT->has('farmsync-getstruct')) {
             $schemas = $this->farm_util->getAllStructSchemasList($source);
@@ -73,7 +74,7 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
             return;
         }
 
-        if ($INPUT->has('farmsync-getdiff')) {
+        if ($action == 'diff') {
             $targetText = $this->farm_util->readRemotePage($target, $page, false);
             $sourceText = $this->farm_util->readRemotePage($source, $page, false);
             $diff = new \Diff(explode("\n", $targetText), explode("\n", $sourceText));
@@ -89,28 +90,34 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
             return;
         }
 
-        if (!$INPUT->has('farmsync-content')) {
-            if ($INPUT->str('farmsync-type') == 'media') {
-                $this->farm_util->saveRemoteMedia($source, $target, $page);
-            } elseif ($INPUT->str('farmsync-type') == 'page') {
-                $this->overwriteRemotePage($source, $target, $page);
-            } else {
-                $targetFN = $this->farm_util->getRemoteFilename($target, $page, null, false);
-                $sourceFN = $this->farm_util->getRemoteFilename($source, $page, null, false);
+        if ($action == 'overwrite') {
+            $type = $INPUT->str('farmsync-type');
+            if (!$INPUT->has('farmsync-content')) {
+                if ($type == 'media') {
+                    $this->farm_util->saveRemoteMedia($source, $target, $page);
+                } elseif ($type == 'page') {
+                    $this->overwriteRemotePage($source, $target, $page);
+                } elseif ($type == 'struct') {
+                    $json = $this->farm_util->getAnimalStructSchemas($source, array($page));
+                    $this->farm_util->importAnimalStructSchema($target, $page, $json[$page]);
+                } else {
+                    $targetFN = $this->farm_util->getRemoteFilename($target, $page, null, false);
+                    $sourceFN = $this->farm_util->getRemoteFilename($source, $page, null, false);
 
-                $this->farm_util->replaceRemoteFile($targetFN, io_readFile($sourceFN), filemtime($sourceFN));
+                    $this->farm_util->replaceRemoteFile($targetFN, io_readFile($sourceFN), filemtime($sourceFN));
+                }
+                $this->farm_util->clearAnimalCache($target);
+                $this->sendResponse(200, "");
+                return;
             }
-            $this->farm_util->clearAnimalCache($target);
-            $this->sendResponse(200, "");
-            return;
-        }
 
-        if ($INPUT->has('farmsync-content')) {
-            $content = $INPUT->str('farmsync-content');
-            $this->writeManualMerge($source, $target, $page, $content);
-            $this->farm_util->clearAnimalCache($target);
-            $this->sendResponse(200, "");
-            return;
+            if ($INPUT->has('farmsync-content')) {
+                $content = $INPUT->str('farmsync-content');
+                $this->writeManualMerge($source, $target, $page, $content);
+                $this->farm_util->clearAnimalCache($target);
+                $this->sendResponse(200, "");
+                return;
+            }
         }
         $this->sendResponse(400, "malformed request");
     }
