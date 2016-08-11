@@ -33,7 +33,6 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
         return true;
     }
 
-    private $update_results;
     public $farm_util;
 
     /** @var \helper_plugin_struct_imexport $struct */
@@ -41,14 +40,12 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
 
     function __construct() {
         $this->farm_util = new FarmSyncUtil();
-        $this->update_results = array();
     }
 
     /**
      * Should carry out any processing required by the plugin.
      */
     public function handle() {
-        $this->struct = plugin_load('helper', 'struct_imexport');
     }
 
     /**
@@ -76,10 +73,12 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             $form->addHTML("<br>");
             $form->addTextarea('farmsync[media]', $this->getLang('label:MediaEntry'));
             $form->addHTML("<br>");
-            if(!empty($this->struct)) {
+            if (plugin_load('helper', 'struct_imexport')) {
                 $form->addCheckbox('farmsync[struct]', 'Synchronize struct data?'); // Fixme LANG
                 $form->addTagOpen('div')->addClass('structsync')->attr('style','display: none;');
                 $form->addTagClose('div');
+            } elseif (plugin_load('helper', 'struct_imexport', false, true)) {
+                echo $this->getLang('notice:struct disabled');
             }
             $form->addFieldsetClose();
             $form->addFieldsetOpen($this->getLang('legend:choose animals'));
@@ -98,19 +97,26 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             $targets = array_keys($INPUT->arr('farmsync-animals'));
             $options = $INPUT->arr('farmsync');
             $textare_linebreak = "\r\n";
-            $pages = explode($textare_linebreak, $options['pages']);
-            $media = explode($textare_linebreak, $options['media']);
+            $pages = array_filter(explode($textare_linebreak, $options['pages']));
+            $media = array_filter(explode($textare_linebreak, $options['media']));
             $struct = array_keys($INPUT->arr('farmsync_struct'));
             $source = $options['source']; // ToDo: validate thath source exists
+
+            /** @var \dokuwiki\plugin\farmsync\meta\EntityUpdates[] $updaters */
+            $updaters = array();
+            if (!empty($pages)) {
+                $updaters[] = new \dokuwiki\plugin\farmsync\meta\PageUpdates($source, $targets, $pages);
+                $updaters[] = new \dokuwiki\plugin\farmsync\meta\TemplateUpdates($source, $targets, $pages);
+            }
+            if (!empty($media)) {
+                $updaters[] = new \dokuwiki\plugin\farmsync\meta\MediaUpdates($source, $targets, $media);
+            }
+            if (!empty($struct)) {
+                $updaters[] = new \dokuwiki\plugin\farmsync\meta\StructUpdates($source, $targets, $struct);
+            }
             echo "<div id=\"plugin__farmsync\"><div id=\"results\" data-source='$options[source]'>";
             echo "<span class='progress'>Progress and Errors</span>";
             echo "<div class='progress'>";
-            /** @var \dokuwiki\plugin\farmsync\meta\EntityUpdates[] $updaters */
-            $updaters = array();
-            $updaters[] = new \dokuwiki\plugin\farmsync\meta\PageUpdates($source, $targets, $pages);
-            $updaters[] = new \dokuwiki\plugin\farmsync\meta\TemplateUpdates($source, $targets, $pages);
-            $updaters[] = new \dokuwiki\plugin\farmsync\meta\MediaUpdates($source, $targets, $media);
-            $updaters[] = new \dokuwiki\plugin\farmsync\meta\StructUpdates($source, $targets, $struct);
             foreach ($updaters as $updater) {
                 $updater->updateEntities();
             }
