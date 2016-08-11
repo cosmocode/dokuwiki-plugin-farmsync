@@ -100,4 +100,8 @@ class TemplateUpdates extends EntityUpdates {
         }
         return $items;
     }
+
+    protected function printResultHeading() {
+        echo "<h3>".$this->getLang('heading:templates')."</h3>";
+    }
 }

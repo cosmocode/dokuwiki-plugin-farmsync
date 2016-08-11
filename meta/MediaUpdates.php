@@ -51,4 +51,8 @@ class MediaUpdates extends EntityUpdates {
     function printProgressLine($target, $i, $total) {
         echo sprintf($this->getLang('progress:media'), $target, $i, $total) . "</br>";
     }
+
+    protected function printResultHeading() {
+        echo "<h3>".$this->getLang('heading:media')."</h3>";
+    }
 }

@@ -46,4 +46,8 @@ class StructUpdates extends EntityUpdates {
     function printProgressLine($target, $i, $total) {
         echo sprintf($this->getLang('progress:struct'), $target, $i, $total) . "</br>";
     }
+
+    protected function printResultHeading() {
+        echo "<h3>".$this->getLang('heading:struct')."struct heading</h3>"; // @todo: LANG!
+    }
 }

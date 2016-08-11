@@ -74,4 +74,8 @@ class PageUpdates extends EntityUpdates {
     function printProgressLine($target, $i, $total) {
         echo sprintf($this->getLang('progress:pages'), $target, $i, $total) . "</br>";
     }
+
+    protected function printResultHeading() {
+        echo "<h3>".$this->getLang('heading:pages')."</h3>";
+    }
 }

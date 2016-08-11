@@ -37,6 +37,39 @@ abstract class EntityUpdates {
         }
     }
 
+    public function getNumberOfAnimalConflicts($animal) {
+        return count($this->results[$animal]['failed']);
+    }
+
+    public function printAnimalResultHTML($animal) {
+        $this->printResultHeading();
+
+        if (!empty($this->results[$animal]['failed'])) {
+            echo "<ul>";
+            /** @var UpdateResults $result */
+            foreach ($this->results[$animal]['failed'] as $result) {
+                echo "<li class='level1'>";
+                echo "<div class='li'>" . $result->getResultLine() . "</div>";
+                echo "</li>";
+            }
+            echo "</ul>";
+        }
+
+        if (!empty($this->results[$animal]['passed'])) {
+            echo '<a class="show_noconflicts wikilink1">' . $this->getLang('link:nocoflictitems') . '</a>';
+            echo "<ul class='noconflicts'>";
+            /** @var UpdateResults $result */
+            foreach ($this->results[$animal]['passed'] as $result) {
+                echo "<li class='level1'>";
+                echo "<div class='li'>" . $result->getResultLine() . "</div>";
+                echo "</li>";
+            }
+            echo "</ul>";
+        }
+    }
+
+    abstract protected function printResultHeading();
+
     public function doPerTargetAction($target) {}
 
     abstract protected function printProgressLine($target, $i, $total);

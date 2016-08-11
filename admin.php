@@ -105,158 +105,42 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             echo "<div id=\"plugin__farmsync\"><div id=\"results\" data-source='$options[source]'>";
             echo "<span class='progress'>Progress and Errors</span>";
             echo "<div class='progress'>";
-            $pageUpdater = new \dokuwiki\plugin\farmsync\meta\PageUpdates($source, $targets, $pages);
-            $pageUpdater->updateEntities();
-            $pageresults = $pageUpdater->getResults();
-            foreach ($pageresults as $target => $results) {
-                $this->update_results[$target]['pages'] = $results;
-            }
-
-            $mediaUpdater = new \dokuwiki\plugin\farmsync\meta\MediaUpdates($source, $targets, $media);
-            $mediaUpdater->updateEntities();
-            $mediaResults = $mediaUpdater->getResults();
-            foreach ($mediaResults as $target => $results) {
-                $this->update_results[$target]['media'] = $results;
-            }
-
-
-            $templateUpdater = new \dokuwiki\plugin\farmsync\meta\TemplateUpdates($source, $targets, $pages);
-            $templateUpdater->updateEntities();
-            $templateresults = $templateUpdater->getResults();
-            foreach ($templateresults as $target => $results) {
-                $this->update_results[$target]['templates'] = $results;
-            }
-
-            $structUpdater = new \dokuwiki\plugin\farmsync\meta\StructUpdates($source, $targets, $struct);
-            $structUpdater->updateEntities();
-            $structResults = $structUpdater->getResults();
-            foreach ($structResults as $target => $results) {
-                $this->update_results[$target]['struct'] = $results;
+            /** @var \dokuwiki\plugin\farmsync\meta\EntityUpdates[] $updaters */
+            $updaters = array();
+            $updaters[] = new \dokuwiki\plugin\farmsync\meta\PageUpdates($source, $targets, $pages);
+            $updaters[] = new \dokuwiki\plugin\farmsync\meta\TemplateUpdates($source, $targets, $pages);
+            $updaters[] = new \dokuwiki\plugin\farmsync\meta\MediaUpdates($source, $targets, $media);
+            $updaters[] = new \dokuwiki\plugin\farmsync\meta\StructUpdates($source, $targets, $struct);
+            foreach ($updaters as $updater) {
+                $updater->updateEntities();
             }
 
             echo "</div>";
             echo "<h1>" . $this->getLang('heading:Update done') . "</h1>";
-            /** @var UpdateResults $result */
-            foreach ($this->update_results as $animal => $results) {
-                $pageconflicts = count($results['pages']['failed']);
-                $mediaconflicts = count($results['media']['failed']);
-                $templateconflicts = count($results['templates']['failed']);
-                $structconflicts = count($results['struct']['failed']);
-                $pagesuccess = count($results['pages']['passed']);
-                $mediasuccess = count($results['media']['passed']);
-                $templatesuccess = count($results['templates']['passed']);
-                $structsuccess = count($results['struct']['passed']);
-                if ($pageconflicts == 0 && $mediaconflicts == 0 && $templateconflicts == 0 && $structconflicts == 0) {
+            foreach ($targets as $target) {
+                $conflicts = 0;
+                foreach ($updaters as $updater) {
+                    $conflicts += $updater->getNumberOfAnimalConflicts($target);
+                }
+                if ($conflicts == 0) {
                     $class = 'noconflicts';
-                    $heading = sprintf($this->getLang('heading:animal noconflict'), $animal);
+                    $heading = sprintf($this->getLang('heading:animal noconflict'), $target);
                 } else {
                     $class = 'withconflicts';
-                    $heading = sprintf($this->getLang('heading:animal conflict'), $animal, $pageconflicts + $mediaconflicts + $templateconflicts + $structconflicts);
+                    $heading = sprintf($this->getLang('heading:animal conflict'), $target, $conflicts);
                 }
                 echo "<div class='result $class'><h2>" . $heading . "</h2>";
                 echo "<div>";
-                echo "<h3>".$this->getLang('heading:pages')."</h3>";
-                if ($pageconflicts > 0) {
-                    echo "<ul>";
-                    foreach ($results['pages']['failed'] as $result) {
-                        echo "<li class='level1'>";
-                        echo "<div class='li'>" . $result->getResultLine() . "</div>";
-                        echo "</li>";
-                    }
-                    echo "</ul>";
-                }
 
-                if ($pagesuccess > 0) {
-                    echo '<a class="show_noconflicts wikilink1">' . $this->getLang('link:nocoflictitems') . '</a>';
-                    echo "<ul class='noconflicts'>";
-                    foreach ($results['pages']['passed'] as $result) {
-                        echo "<li class='level1'>";
-                        echo "<div class='li'>" . $result->getResultLine() . "</div>";
-                        echo "</li>";
-                    }
-                    echo "</ul>";
+                foreach ($updaters as $updater) {
+                    $updater->printAnimalResultHTML($target);
                 }
-
-                echo "<h3>".$this->getLang('heading:templates')."</h3>";
-                if ($templateconflicts > 0) {
-                    echo "<ul>";
-                    foreach ($results['templates']['failed'] as $result) {
-                        echo "<li class='level1'>";
-                        echo "<div class='li'>" . $result->getResultLine() . "</div>";
-                        echo "</li>";
-                    }
-                    echo "</ul>";
-                }
-
-                if ($templatesuccess > 0) {
-                    echo '<a class="show_noconflicts wikilink1">' . $this->getLang('link:nocoflictitems') . '</a>';
-                    echo "<ul class='noconflicts'>";
-                    foreach ($results['templates']['passed'] as $result) {
-                        echo "<li class='level1'>";
-                        echo "<div class='li'>" . $result->getResultLine() . "</div>";
-                        echo "</li>";
-                    }
-                    echo "</ul>";
-                }
-
-                echo "<h3>".$this->getLang('heading:media')."</h3>";
-                if ($mediaconflicts > 0) {
-                    echo "<ul>";
-                    foreach ($results['media']['failed'] as $result) {
-                        echo "<li class='level1'>";
-                        echo "<div class='li'>" . $result->getResultLine() . "</div>";
-                        echo "</li>";
-                    }
-                    echo "</ul>";
-                }
-
-                if ($mediasuccess > 0) {
-                    echo '<a class="show_noconflicts wikilink1">' . $this->getLang('link:nocoflictitems') . '</a>';
-                    echo "<ul class='noconflicts'>";
-                    foreach ($results['media']['passed'] as $result) {
-                        echo "<li class='level1'>";
-                        echo "<div class='li'>" . $result->getResultLine() . "</div>";
-                        echo "</li>";
-                    }
-                    echo "</ul>";
-                }
-
-                echo "<h3>".$this->getLang('heading:struct')."struct heading</h3>";
-                if ($structconflicts > 0) {
-                    echo "<ul>";
-                    foreach ($results['struct']['failed'] as $result) {
-                        echo "<li class='level1'>";
-                        echo "<div class='li'>" . $result->getResultLine() . "</div>";
-                        echo "</li>";
-                    }
-                    echo "</ul>";
-                }
-
-                if ($structsuccess > 0) {
-                    echo '<a class="show_noconflicts wikilink1">' . $this->getLang('link:nocoflictitems') . '</a>';
-                    echo "<ul class='noconflicts'>";
-                    foreach ($results['struct']['passed'] as $result) {
-                        echo "<li class='level1'>";
-                        echo "<div class='li'>" . $result->getResultLine() . "</div>";
-                        echo "</li>";
-                    }
-                    echo "</ul>";
-                }
-
                 echo "</div>";
                 echo "</div>";
             }
             echo "</div></div>";
         }
     }
-
-    /**
-     * @return array
-     */
-    public function getUpdateResults() {
-        return $this->update_results;
-    }
-
 }
 
 // vim:ts=4:sw=4:et:
