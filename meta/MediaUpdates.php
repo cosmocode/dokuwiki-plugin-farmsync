@@ -33,7 +33,7 @@ class MediaUpdates extends EntityUpdates {
             $this->results[$target]['passed'][] = $result;
             return;
         }
-        $result = new MediaConflict($medium, $target);
+        $result = new MediaConflict($medium, $target, $source);
         $result->setMergeResult('merged with conflicts');
         $this->results[$target]['failed'][] = $result;
     }
