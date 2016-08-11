@@ -8,14 +8,9 @@
 
 // must be run within Dokuwiki
 if (!defined('DOKU_INC')) die();
-require_once(DOKU_INC . 'inc/DifferenceEngine.php');
 
 use dokuwiki\Form\Form;
 use dokuwiki\plugin\farmsync\meta\FarmSyncUtil;
-use dokuwiki\plugin\farmsync\meta\UpdateResults;
-use dokuwiki\plugin\farmsync\meta\PageConflict;
-use dokuwiki\plugin\farmsync\meta\MediaConflict;
-use dokuwiki\plugin\farmsync\meta\TemplateConflict;
 
 class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
 

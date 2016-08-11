@@ -1,6 +1,7 @@
 <?php
 
 namespace dokuwiki\plugin\farmsync\meta;
+require_once(DOKU_INC . 'inc/DifferenceEngine.php');
 
 abstract class EntityUpdates {
     protected $source;
