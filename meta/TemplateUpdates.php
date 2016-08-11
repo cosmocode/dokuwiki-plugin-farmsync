@@ -38,7 +38,7 @@ class TemplateUpdates extends EntityUpdates {
     protected function preProcessEntities($pagelines) {
         $templates = array();
         foreach ($pagelines as $line) {
-            $templates = array_merge($templates, $this->getDocumentsFromLine($this->source, $line, 'template'));
+            $templates = array_merge($templates, $this->getDocumentsFromLine($this->source, $line));
         }
         array_unique($templates);
         return $templates;
@@ -103,5 +103,42 @@ class TemplateUpdates extends EntityUpdates {
 
     protected function printResultHeading() {
         echo "<h3>".$this->getLang('heading:templates')."</h3>";
+    }
+
+
+    /**
+     * @param string $source
+     * @param string $line
+     *
+     * @return \string[]
+     */
+    public function getDocumentsFromLine($source, $line) {
+        if (trim($line) == '') return array();
+        $cleanline = str_replace('/', ':', $line);
+        $namespace = join(':', explode(':', $cleanline, -1));
+        $documentdir = dirname($this->farm_util->getRemoteFilename($source, $cleanline, null, false));
+
+        $documents = array();
+
+        if (substr($cleanline, -3) == ':**') {
+            $nsfiles = $this->getTemplates($documentdir);
+            $documents = array_map(function ($elem) use ($namespace) {
+                return $namespace . ':' . $elem['id'];
+            }, $nsfiles);
+        } elseif (substr($cleanline, -2) == ':*') {
+            $nsfiles = $this->getTemplates($documentdir, null, null, array('depth' => 1));
+            $documents = array_map(function ($elem) use ($namespace) {
+                return $namespace . ':' . $elem['id'];
+            }, $nsfiles);
+        } else {
+            $document = $cleanline;
+            if (substr(noNS($document), 0, 1) != '_') return array();
+            if (!$this->farm_util->remotePageExists($source, $document, false)) {
+                msg("Template $document does not exist in source wiki!", -1);
+                return array();
+            }
+            $documents[] = $document;
+        }
+        return $documents;
     }
 }

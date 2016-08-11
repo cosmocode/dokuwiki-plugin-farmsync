@@ -78,4 +78,47 @@ class PageUpdates extends EntityUpdates {
     protected function printResultHeading() {
         echo "<h3>".$this->getLang('heading:pages')."</h3>";
     }
+
+    /**
+     * @param string $source
+     * @param string $line
+     *
+     * @return \string[]
+     *
+     */
+    public function getDocumentsFromLine($source, $line) {
+        if (trim($line) == '') return array();
+        $cleanline = str_replace('/', ':', $line);
+        $namespace = join(':', explode(':', $cleanline, -1));
+        $documentdir = dirname($this->farm_util->getRemoteFilename($source, $cleanline, null, false));
+        $search_algo = 'search_allpages';
+        $documents = array();
+
+        if (substr($cleanline, -3) == ':**') {
+            $nsfiles = array();
+            search($nsfiles, $documentdir, $search_algo, array());
+            $documents = array_map(function ($elem) use ($namespace) {
+                return $namespace . ':' . $elem['id'];
+            }, $nsfiles);
+        } elseif (substr($cleanline, -2) == ':*') {
+            $nsfiles = array();
+            search($nsfiles, $documentdir, $search_algo, array('depth' => 1));
+            $documents = array_map(function ($elem) use ($namespace) {
+                return $namespace . ':' . $elem['id'];
+            }, $nsfiles);
+        } else {
+            $document = $cleanline;
+            if (substr(noNS($document), 0, 1) == '_') return array();
+            if (in_array(substr($document, -1), array(':', ';'))) {
+                $document = $this->handleStartpage($source, $document);
+            }
+            if (!$this->farm_util->remotePageExists($source, $document)) {
+                msg("Page $document does not exist in source wiki!", -1);
+                return array();
+            }
+            $documents[] = cleanID($document);
+        }
+
+        return $documents;
+    }
 }

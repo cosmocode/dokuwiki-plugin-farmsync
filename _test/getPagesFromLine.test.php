@@ -142,7 +142,7 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         $templateUpdater->farm_util = $mock_farm_util;
 
         // act
-        $actual_result = $templateUpdater->getDocumentsFromLine($sourceanimal, $pattern, 'template');
+        $actual_result = $templateUpdater->getDocumentsFromLine($sourceanimal, $pattern);
 
         // assert
         global $MSG;
@@ -197,7 +197,7 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
         $mediaUpdater->farm_util = $mock_farm_util;
 
         // act
-        $actual_result = $mediaUpdater->getDocumentsFromLine($sourceanimal, $pattern, 'media');
+        $actual_result = $mediaUpdater->getDocumentsFromLine($sourceanimal, $pattern);
 
         // assert
         global $MSG;
@@ -212,6 +212,24 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
                 array('wiki:dokuwiki-128.png'),
                 0,
                 'media_ns'
+            ),
+            array(
+                'wiki:dokuwiki-128.png',
+                array('wiki:dokuwiki-128.png'),
+                0,
+                'media specific file'
+            ),
+            array(
+                ':**',
+                array(':wiki:dokuwiki-128.png'),
+                0,
+                'media deep ns file'
+            ),
+            array(
+                'wiki:missing.png',
+                array(),
+                1,
+                'media missing file'
             ),
         );
     }

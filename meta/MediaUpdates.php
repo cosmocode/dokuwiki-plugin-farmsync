@@ -41,7 +41,7 @@ class MediaUpdates extends EntityUpdates {
     protected function preProcessEntities($medialines) {
         $media = array();
         foreach ($medialines as $line) {
-            $media = array_merge($media, $this->getDocumentsFromLine($this->source, $line, 'media'));
+            $media = array_merge($media, $this->getDocumentsFromLine($this->source, $line));
         }
         array_unique($media);
         return $media;
@@ -54,5 +54,44 @@ class MediaUpdates extends EntityUpdates {
 
     protected function printResultHeading() {
         echo "<h3>".$this->getLang('heading:media')."</h3>";
+    }
+
+    /**
+     * @param string $source
+     * @param string $line
+     *
+     * @return \string[]
+     *
+     */
+    public function getDocumentsFromLine($source, $line) {
+        if (trim($line) == '') return array();
+        $cleanline = str_replace('/', ':', $line);
+        $namespace = join(':', explode(':', $cleanline, -1));
+        $documentdir = dirname($this->farm_util->getRemoteMediaFilename($source, $cleanline, 0, false));
+
+        $search_algo = 'search_media';
+        $documents = array();
+
+        if (substr($cleanline, -3) == ':**') {
+            $nsfiles = array();
+            search($nsfiles, $documentdir, $search_algo, array());
+            $documents = array_map(function ($elem) use ($namespace) {
+                return $namespace . ':' . $elem['id'];
+            }, $nsfiles);
+        } elseif (substr($cleanline, -2) == ':*') {
+            $nsfiles = array();
+            search($nsfiles, $documentdir, $search_algo, array('depth' => 1));
+            $documents = array_map(function ($elem) use ($namespace) {
+                return $namespace . ':' . $elem['id'];
+            }, $nsfiles);
+        } else {
+            $document = $cleanline;
+            if (!$this->farm_util->remoteMediaExists($source, $document) || is_dir(mediaFN($document))) {
+                msg("Media-file $document does not exist in source wiki!", -1);
+                return array();
+            }
+            $documents[] = cleanID($document);
+        }
+        return $documents;
     }
 }
