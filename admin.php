@@ -65,6 +65,8 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
         $total = count($targets);
         $i = 0;
         foreach ($targets as $target) {
+            $this->update_results[$target]['pages']['passed'] = array();
+            $this->update_results[$target]['pages']['failed'] = array();
             foreach ($pages as $page) {
                 $this->updatePage($page, $source, $target);
             }
@@ -83,6 +85,8 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
         $total = count($targets);
         $i = 0;
         foreach ($targets as $target) {
+            $this->update_results[$target]['templates']['passed'] = array();
+            $this->update_results[$target]['templates']['failed'] = array();
             foreach ($templates as $template) {
                 $this->updateTemplate($template, $source, $target);
             }
@@ -105,6 +109,8 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
         $total = count($targets);
         $i = 0;
         foreach ($targets as $target) {
+            $this->update_results[$target]['media']['passed'] = array();
+            $this->update_results[$target]['media']['failed'] = array();
             foreach ($media as $medium) {
                 $this->updateMedium($medium, $source, $target);
             }
@@ -409,14 +415,6 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             echo "<h1>" . $this->getLang('heading:Update done') . "</h1>";
             /** @var UpdateResults $result */
             foreach ($this->update_results as $animal => $results) {
-                if (!isset($results['pages']['failed'])) $results['pages']['failed'] = array();
-                if (!isset($results['media']['failed'])) $results['media']['failed'] = array();
-                if (!isset($results['templates']['failed'])) $results['templates']['failed'] = array();
-                if (!isset($results['struct']['failed'])) $results['struct']['failed'] = array();
-                if (!isset($results['pages']['passed'])) $results['pages']['passed'] = array();
-                if (!isset($results['media']['passed'])) $results['media']['passed'] = array();
-                if (!isset($results['templates']['passed'])) $results['templates']['passed'] = array();
-                if (!isset($results['struct']['passed'])) $results['struct']['passed'] = array();
                 $pageconflicts = count($results['pages']['failed']);
                 $mediaconflicts = count($results['media']['failed']);
                 $templateconflicts = count($results['templates']['failed']);
@@ -581,6 +579,8 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
         $schemas = $this->farm_util->getAnimalStructSchemas($source, $schemas);
 
         foreach ($targets as $target) {
+            $this->update_results[$target]['struct']['passed'] = array();
+            $this->update_results[$target]['struct']['failed'] = array();
             foreach ($schemas as $schemaName => $json) {
                 $result = $this->farm_util->updateAnimalStructSchema($target, $schemaName, $json);
                 if (is_a($result, 'dokuwiki\plugin\farmsync\meta\StructConflict')) {
