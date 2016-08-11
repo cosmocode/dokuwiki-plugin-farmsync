@@ -52,308 +52,6 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
     }
 
     /**
-     * @param string[] $pagelines List of pages to copy/update in the animals
-     * @param string[] $targets List of animals to update
-     * @param          $farmHelper
-     */
-    protected function updatePages($pagelines, $source, $targets) {
-        $pages = array();
-        foreach ($pagelines as $line) {
-            $pages = array_merge($pages, $this->getDocumentsFromLine($source, $line));
-        }
-        array_unique($pages);
-        $total = count($targets);
-        $i = 0;
-        foreach ($targets as $target) {
-            $this->update_results[$target]['pages']['passed'] = array();
-            $this->update_results[$target]['pages']['failed'] = array();
-            foreach ($pages as $page) {
-                $this->updatePage($page, $source, $target);
-            }
-            $i += 1;
-            $this->farm_util->clearAnimalCache($target);
-            echo sprintf($this->getLang('progress:pages'), $target, $i, $total) . "</br>";
-        }
-    }
-
-    function updateTemplates($pagelines, $source, $targets) {
-        $templates = array();
-        foreach ($pagelines as $line) {
-            $templates = array_merge($templates, $this->getDocumentsFromLine($source, $line, 'template'));
-        }
-        array_unique($templates);
-        $total = count($targets);
-        $i = 0;
-        foreach ($targets as $target) {
-            $this->update_results[$target]['templates']['passed'] = array();
-            $this->update_results[$target]['templates']['failed'] = array();
-            foreach ($templates as $template) {
-                $this->updateTemplate($template, $source, $target);
-            }
-            $i += 1;
-            $this->farm_util->clearAnimalCache($target);
-            echo sprintf($this->getLang('progress:templates'), $target, $i, $total) . "</br>";
-        }
-    }
-
-    /**
-     * @param string[] $medialines
-     * @param string[] $targets
-     */
-    private function updateMedia($medialines, $source, $targets) {
-        $media = array();
-        foreach ($medialines as $line) {
-            $media = array_merge($media, $this->getDocumentsFromLine($source, $line, 'media'));
-        }
-        array_unique($media);
-        $total = count($targets);
-        $i = 0;
-        foreach ($targets as $target) {
-            $this->update_results[$target]['media']['passed'] = array();
-            $this->update_results[$target]['media']['failed'] = array();
-            foreach ($media as $medium) {
-                $this->updateMedium($medium, $source, $target);
-            }
-            $i += 1;
-            $this->farm_util->clearAnimalCache($target);
-            echo sprintf($this->getLang('progress:media'), $target, $i, $total) . "</br>";
-        }
-    }
-
-    /**
-     * @param string $line
-     * @param string $type 'page' for pages, 'media' for media or 'template' for templates
-     *
-     * @return string[]
-     */
-    public function getDocumentsFromLine($source, $line, $type = 'page') {
-        if (trim($line) == '') return array();
-        $cleanline = str_replace('/', ':', $line);
-        $namespace = join(':', explode(':', $cleanline, -1));
-        if ($type == 'media') {
-            $documentdir = dirname($this->farm_util->getRemoteMediaFilename($source, $cleanline, 0, false));
-        } else {
-            $documentdir = dirname($this->farm_util->getRemoteFilename($source, $cleanline, null, false));
-        }
-
-        $search_algo = ($type == 'page') ? 'search_allpages' : (($type == 'media') ? 'search_media' : '');
-        $documents = array();
-
-        if (substr($cleanline, -3) == ':**') {
-            $nsfiles = array();
-            $type != 'template' ? search($nsfiles, $documentdir, $search_algo, array()) : $nsfiles = $this->getTemplates($documentdir);
-            $documents = array_map(function ($elem) use ($namespace) {
-                return $namespace . ':' . $elem['id'];
-            }, $nsfiles);
-        } elseif (substr($cleanline, -2) == ':*') {
-            $nsfiles = array();
-            $type != 'template' ? search($nsfiles, $documentdir, $search_algo, array('depth' => 1)) : $nsfiles = $this->getTemplates($documentdir, null, null, array('depth' => 1));
-            $documents = array_map(function ($elem) use ($namespace) {
-                return $namespace . ':' . $elem['id'];
-            }, $nsfiles);
-        } else {
-            $document = $cleanline;
-            if ($type == 'page' && substr(noNS($document), 0, 1) == '_') return array();
-            if ($type == 'template' && substr(noNS($document), 0, 1) != '_') return array();
-            if ($type == 'page' && in_array(substr($document, -1), array(':', ';'))) {
-                $document = $this->handleStartpage($source, $document);
-            }
-            if ($type == 'page' && !$this->farm_util->remotePageExists($source, $document)) {
-                msg("Page $document does not exist in source wiki!", -1);
-                return array();
-            }
-            if ($type == 'template' && !$this->farm_util->remotePageExists($source, $document, false)) {
-                msg("Template $document does not exist in source wiki!", -1);
-                return array();
-            }
-            if ($type == 'media' && (!$this->farm_util->remoteMediaExists($source, $document)) || is_dir(mediaFN($document))) {
-                msg("Media-file $document does not exist in source wiki!", -1);
-                return array();
-            }
-            $documents[] = $type != 'template' ? cleanID($document) : $document;
-        }
-        return $documents;
-    }
-
-    /**
-     * This function is in large parts a copy of the core function search().
-     * However, as opposed to core- search(), this function will also return templates,
-     * i.e. files starting with an underscore character.
-     *
-     * $opts['depth']   recursion level, 0 for all
-     *
-     * @param   string $base Where to start the search.
-     * @param   string $dir Current directory beyond $base
-     * @param             $lvl
-     * @param             $opts
-     *
-     * @return array|bool
-     */
-    public function getTemplates($base, $dir = '', $lvl = 0, $opts = array()) {
-        $dirs = array();
-        $files = array();
-        $items = array();
-
-        // safeguard against runaways #1452
-        if ($base == '' || $base == '/') {
-            throw new RuntimeException('No valid $base passed to search() - possible misconfiguration or bug');
-        }
-
-        //read in directories and files
-        $dh = @opendir($base . '/' . $dir);
-        if (!$dh) {
-            return array();
-        }
-        while (($file = readdir($dh)) !== false) {
-            if (preg_match('/^[\.]/', $file)) continue;
-            if (is_dir($base . '/' . $dir . '/' . $file)) {
-                $dirs[] = $dir . '/' . $file;
-                continue;
-            }
-            if (substr($file, 0, 1) !== '_') continue;
-            $files[] = $dir . '/' . $file;
-        }
-
-        foreach ($files as $file) {
-            //only search txt files
-            if (substr($file, -4) != '.txt') continue;
-            $items[] = array('id' => pathID($file));
-        }
-
-        foreach ($dirs as $sdir) {
-            $items = array_merge($items, $this->getTemplates($base, $sdir, $lvl + 1, $opts));
-        }
-        return $items;
-    }
-
-    public function updateTemplate($template, $source, $target) {
-        $sourceModTime = $this->farm_util->getRemoteFilemtime($source, $template, false, false);
-        $result = new UpdateResults($template, $target);
-
-        $targetFN = $this->farm_util->getRemoteFilename($target, $template, null, false);
-        $sourceContent = $this->farm_util->readRemotePage($source, $template, false);
-
-        if (!$this->farm_util->remotePageExists($target, $template, false)) {
-            $this->farm_util->replaceRemoteFile($targetFN, $sourceContent, $sourceModTime);
-            $result->setMergeResult('new file');
-            $this->update_results[$target]['templates']['passed'][] = $result;
-            return;
-        }
-        $targetModTime = $this->farm_util->getRemoteFilemtime($target, $template, false, false);
-        if ($sourceContent == $this->farm_util->readRemotePage($target, $template, false)) {
-            $result->setMergeResult('unchanged');
-            $this->update_results[$target]['templates']['passed'][] = $result;
-            return;
-        }
-        if ($targetModTime < $sourceModTime) {
-            $this->farm_util->replaceRemoteFile($targetFN, $sourceContent, $sourceModTime);
-            $result->setMergeResult('file overwritten');
-            $this->update_results[$target]['templates']['passed'][] = $result;
-            return;
-        }
-        $result = new TemplateConflict($template, $target);
-        $result->setMergeResult('merged with conflicts');
-        $this->update_results[$target]['templates']['failed'][] = $result;
-    }
-
-    public function updateMedium($medium, $source, $target) {
-        $sourceModTime = $this->farm_util->getRemoteFilemtime($source, $medium, true);
-
-        $result = new UpdateResults($medium, $target);
-        if (!$this->farm_util->remoteMediaExists($target, $medium)) {
-            $this->farm_util->saveRemoteMedia($source, $target, $medium);
-            $result->setMergeResult('new file');
-            $this->update_results[$target]['media']['passed'][] = $result;
-            return;
-        }
-        $targetModTime = $this->farm_util->getRemoteFilemtime($target, $medium, true);
-        if ($targetModTime == $sourceModTime && $this->farm_util->readRemoteMedia($source, $medium) == $this->farm_util->readRemoteMedia($target, $medium)) {
-            $result->setMergeResult('unchanged');
-            $this->update_results[$target]['media']['passed'][] = $result;
-            return;
-        }
-        if ($this->farm_util->remoteMediaExists($source, $medium, $targetModTime) && $this->farm_util->readRemoteMedia($source, $medium, $targetModTime) == $this->farm_util->readRemoteMedia($target, $medium)) {
-            $this->farm_util->saveRemoteMedia($source, $target, $medium);
-            $result->setMergeResult('file overwritten');
-            $this->update_results[$target]['media']['passed'][] = $result;
-            return;
-        }
-        if ($this->farm_util->remoteMediaExists($target, $medium, $sourceModTime) && $this->farm_util->readRemoteMedia($source, $medium) == $this->farm_util->readRemoteMedia($target, $medium, $sourceModTime)) {
-            $result->setMergeResult('unchanged');
-            $this->update_results[$target]['media']['passed'][] = $result;
-            return;
-        }
-        $result = new MediaConflict($medium, $target);
-        $result->setMergeResult('merged with conflicts');
-        $this->update_results[$target]['media']['failed'][] = $result;
-
-    }
-
-    /**
-     * @param string $page The pageid
-     * @param string $source The source animal
-     * @param string $target The target animal
-     * @return UpdateResults
-     *
-     */
-    public function updatePage($page, $source, $target) {
-        $result = new UpdateResults($page, $target);
-        $sourceModTime = $this->farm_util->getRemoteFilemtime($source, $page);
-        $sourceText = $this->farm_util->readRemotePage($source, $page);
-
-        if (!$this->farm_util->remotePageExists($target, $page)) {
-            $this->farm_util->saveRemotePage($target, $page, $sourceText, $sourceModTime);
-            $result->setMergeResult('new file');
-            $this->update_results[$target]['pages']['passed'][] = $result;
-            return;
-        }
-        $targetModTime = $this->farm_util->getRemoteFilemtime($target, $page);
-        $targetText = $this->farm_util->readRemotePage($target, $page);
-        if ($targetModTime == $sourceModTime && $targetText == $sourceText) {
-            $result->setMergeResult('unchanged');
-            $this->update_results[$target]['pages']['passed'][] = $result;
-            return;
-        }
-
-        $sourceArchiveText = $this->farm_util->readRemotePage($source, $page, null, $targetModTime);
-        if ($targetModTime < $sourceModTime && $sourceArchiveText == $targetText) {
-            $this->farm_util->saveRemotePage($target, $page, $sourceText, $sourceModTime);
-            $result->setMergeResult('file overwritten');
-            $this->update_results[$target]['pages']['passed'][] = $result;
-            return;
-        }
-
-        // We have to merge
-        $commonroot = $this->farm_util->findCommonAncestor($page, $source, $target);
-        $diff3 = new \Diff3(explode("\n", $commonroot), explode("\n", $targetText), explode("\n", $sourceText));
-
-        // prepare labels
-        $label1 = '✎————————————————— ' . $this->getLang('merge_animal') . ' ————';
-        $label3 = '✏————————————————— ' . $this->getLang('merge_source') . ' ————';
-        $label2 = '✐————————————————————————————————————';
-        $final = join("\n", $diff3->mergedOutput($label1, $label2, $label3));
-        if ($final == $targetText) {
-            $result->setMergeResult('unchanged');
-            $this->update_results[$target]['pages']['passed'][] = $result;
-            return;
-        }
-        if (!$diff3->_conflictingBlocks) {
-            $this->farm_util->saveRemotePage($target, $page, $final);
-            $result->setFinalText($final);
-            $result->setMergeResult('merged without conflicts');
-            $this->update_results[$target]['pages']['passed'][] = $result;
-            return;
-        }
-        $result = new PageConflict($page, $target);
-        $result->setMergeResult('merged with conflicts');
-        $result->setConflictingBlocks($diff3->_conflictingBlocks);
-        $result->setFinalText($final);
-        $this->update_results[$target]['pages']['failed'][] = $result;
-        return;
-
-    }
-
-    /**
      * Render HTML output, e.g. helpful text and a form
      */
     public function html() {
@@ -407,10 +105,35 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             echo "<div id=\"plugin__farmsync\"><div id=\"results\" data-source='$options[source]'>";
             echo "<span class='progress'>Progress and Errors</span>";
             echo "<div class='progress'>";
-            $this->updatePages($pages, $source, $targets);
-            $this->updateTemplates($pages, $source, $targets);
-            $this->updateMedia($media, $source, $targets);
-            $this->updateStruct($struct, $source, $targets);
+            $pageUpdater = new \dokuwiki\plugin\farmsync\meta\PageUpdates($source, $targets, $pages);
+            $pageUpdater->updateEntities();
+            $pageresults = $pageUpdater->getResults();
+            foreach ($pageresults as $target => $results) {
+                $this->update_results[$target]['pages'] = $results;
+            }
+
+            $mediaUpdater = new \dokuwiki\plugin\farmsync\meta\MediaUpdates($source, $targets, $media);
+            $mediaUpdater->updateEntities();
+            $mediaResults = $mediaUpdater->getResults();
+            foreach ($mediaResults as $target => $results) {
+                $this->update_results[$target]['media'] = $results;
+            }
+
+
+            $templateUpdater = new \dokuwiki\plugin\farmsync\meta\TemplateUpdates($source, $targets, $pages);
+            $templateUpdater->updateEntities();
+            $templateresults = $templateUpdater->getResults();
+            foreach ($templateresults as $target => $results) {
+                $this->update_results[$target]['templates'] = $results;
+            }
+
+            $structUpdater = new \dokuwiki\plugin\farmsync\meta\StructUpdates($source, $targets, $struct);
+            $structUpdater->updateEntities();
+            $structResults = $structUpdater->getResults();
+            foreach ($structResults as $target => $results) {
+                $this->update_results[$target]['struct'] = $results;
+            }
+
             echo "</div>";
             echo "<h1>" . $this->getLang('heading:Update done') . "</h1>";
             /** @var UpdateResults $result */
@@ -527,27 +250,6 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
         }
     }
 
-
-    /**
-     * @param string $page
-     * @return string
-     */
-    protected function handleStartpage($source, $page) {
-        global $conf;
-        if ($this->farm_util->remotePageExists($source, $page . $conf['start'])) {
-            $page = $page . $conf['start'];
-            return $page;
-        } elseif ($this->farm_util->remotePageExists($source, $page . noNS(cleanID($page)))) {
-            $page = $page . noNS(cleanID($page));
-            return $page;
-        } elseif ($this->farm_util->remotePageExists($source, $page)) {
-            return cleanID($page);
-        } else {
-            $page = $page . $conf['start'];
-            return $page;
-        }
-    }
-
     /**
      * @return array
      */
@@ -555,45 +257,6 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
         return $this->update_results;
     }
 
-    private function updateStruct($struct, $source, $targets) {
-        if (empty($struct)) {
-            return;
-        }
-
-        $schemas = array();
-        $assignments = array();
-        foreach ($struct as $entry) {
-            list ($operation, $schema) = explode('_', $entry, 2);
-            if ($operation == 'assign') {
-                $assignments[] = $schema;
-            }
-            if ($operation == 'schema') {
-                $schemas[] = $schema;
-            }
-        }
-
-        $assignments = $this->farm_util->getAnimalStructAssignments($source, $assignments);
-
-        $schemas = $this->farm_util->getAnimalStructSchemas($source, $schemas);
-        $total = count($targets);
-        $i = 0;
-
-        foreach ($targets as $target) {
-            $this->update_results[$target]['struct']['passed'] = array();
-            $this->update_results[$target]['struct']['failed'] = array();
-            $this->farm_util->replaceAnimalStructAssignments($target, $assignments);
-            foreach ($schemas as $schemaName => $json) {
-                $result = $this->farm_util->updateAnimalStructSchema($target, $schemaName, $json);
-                if (is_a($result, 'dokuwiki\plugin\farmsync\meta\StructConflict')) {
-                    $this->update_results[$target]['struct']['failed'][] = $result;
-                } else {
-                    $this->update_results[$target]['struct']['passed'][] = $result;
-                }
-            }
-            $i += 1;
-            echo sprintf($this->getLang('progress:struct'), $target, $i, $total) . "</br>";
-        }
-    }
 }
 
 // vim:ts=4:sw=4:et:
