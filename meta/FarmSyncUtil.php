@@ -440,7 +440,7 @@ class FarmSyncUtil {
         $farmer_metadir = $conf['metadir'];
         $conf['metadir'] = $remoteDataDir . 'meta';
 
-        $struct->importSchema($schemaName, $json);
+        $struct->importSchema($schemaName, $json, 'FARMSYNC');
 
         $conf['metadir'] = $farmer_metadir;
     }
@@ -468,7 +468,7 @@ class FarmSyncUtil {
         $targetSchema = json_decode($struct->getCurrentSchemaJSON($schemaName));
 
         if ($targetSchema->id == 0) {
-            $struct->importSchema($schemaName, $json);
+            $struct->importSchema($schemaName, $json, 'FARMSYNC');
             $result->setMergeResult('new file');
             return $result;
         }
@@ -478,7 +478,7 @@ class FarmSyncUtil {
                 $result->setMergeResult('unchanged');
                 return $result;
             }
-            $struct->importSchema($schemaName, $json);
+            $struct->importSchema($schemaName, $json, 'FARMSYNC');
             $result->setMergeResult('file overwritten');
             return $result;
         }
