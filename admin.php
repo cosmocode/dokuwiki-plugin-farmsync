@@ -69,11 +69,11 @@ class admin_plugin_farmsync extends DokuWiki_Admin_Plugin {
             $form->addTextarea('farmsync[media]', $this->getLang('label:MediaEntry'));
             $form->addHTML("<br>");
             if (plugin_load('helper', 'struct_imexport')) {
-                $form->addCheckbox('farmsync[struct]', 'Synchronize struct data?'); // Fixme LANG
+                $form->addCheckbox('farmsync[struct]', $this->getLang('label:struct synchronisation'));
                 $form->addTagOpen('div')->addClass('structsync')->attr('style','display: none;');
                 $form->addTagClose('div');
             } elseif (plugin_load('helper', 'struct_imexport', false, true)) {
-                echo $this->getLang('notice:struct disabled');
+                echo '<div style="color: grey;">' . $this->getLang('notice:struct disabled') . '</div>';
             }
             $form->addFieldsetClose();
             $form->addFieldsetOpen($this->getLang('legend:choose animals'));

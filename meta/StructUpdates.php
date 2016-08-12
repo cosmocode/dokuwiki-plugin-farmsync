@@ -48,6 +48,6 @@ class StructUpdates extends EntityUpdates {
     }
 
     protected function printResultHeading() {
-        echo "<h3>".$this->getLang('heading:struct')."struct heading</h3>"; // @todo: LANG!
+        echo "<h3>" . $this->getLang('heading:struct') . "</h3>";
     }
 }
