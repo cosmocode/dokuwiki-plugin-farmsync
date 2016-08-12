@@ -370,9 +370,6 @@ class FarmSyncUtil {
     public function getAnimalStructAssignments($source, $schemas) {
         /** @var \helper_plugin_struct_imexport $struct */
         $struct = plugin_load('helper', 'struct_imexport');
-        if (empty($struct)) {
-            return array();
-        }
         global $conf;
 
         $remoteDataDir = $this->getAnimalDataDir($source);
@@ -394,9 +391,6 @@ class FarmSyncUtil {
     public function replaceAnimalStructAssignments($target, $assignments) {
         /** @var \helper_plugin_struct_imexport $struct */
         $struct = plugin_load('helper', 'struct_imexport');
-        if (empty($struct)) {
-            //ToDo: Throw exception?
-        }
         global $conf;
 
         $remoteDataDir = $this->getAnimalDataDir($target);
@@ -406,15 +400,11 @@ class FarmSyncUtil {
             $struct->replaceSchemaAssignmentPatterns($schema, $patterns);
         }
         $conf['metadir'] = $farmer_metadir;
-        // ToDo: UpdateResult
     }
 
-    public function getAnimalStructSchemas($source, $schemas) {
+    public function getAnimalStructSchemasJSON($source, $schemas) {
         /** @var \helper_plugin_struct_imexport $struct */
         $struct = plugin_load('helper', 'struct_imexport');
-        if (empty($struct)) {
-            //ToDo: Throw exception?
-        }
         global $conf;
 
         $remoteDataDir = $this->getAnimalDataDir($source);
@@ -461,9 +451,6 @@ class FarmSyncUtil {
     private function _updateAnimalStructSchema($target, $schemaName, $json) {
         /** @var \helper_plugin_struct_imexport $struct */
         $struct = plugin_load('helper', 'struct_imexport');
-        if (empty($struct)) {
-            //ToDo: Throw exception?
-        }
         $result = new UpdateResults($schemaName, $target);
         $targetSchema = json_decode($struct->getCurrentSchemaJSON($schemaName));
 

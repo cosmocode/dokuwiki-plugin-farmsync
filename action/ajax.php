@@ -98,7 +98,7 @@ class action_plugin_farmsync_ajax extends DokuWiki_Action_Plugin {
                 } elseif ($type == 'page') {
                     $this->overwriteRemotePage($source, $target, $page);
                 } elseif ($type == 'struct') {
-                    $json = $this->farm_util->getAnimalStructSchemas($source, array($page));
+                    $json = $this->farm_util->getAnimalStructSchemasJSON($source, array($page));
                     $this->farm_util->importAnimalStructSchema($target, $page, $json[$page]);
                 } else {
                     $targetFN = $this->farm_util->getRemoteFilename($target, $page, null, false);

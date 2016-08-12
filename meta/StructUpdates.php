@@ -31,7 +31,7 @@ class StructUpdates extends EntityUpdates {
 
         $this->assignments = $this->farm_util->getAnimalStructAssignments($this->source, $this->assignments);
 
-        $schemas = $this->farm_util->getAnimalStructSchemas($this->source, $schemas);
+        $schemas = $this->farm_util->getAnimalStructSchemasJSON($this->source, $schemas);
 
         array_walk($schemas, function (&$value, $key) {$value = array($key, $value);});
 
