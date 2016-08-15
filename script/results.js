@@ -3,6 +3,15 @@ jQuery(function(){
 
     var $farmsync = jQuery('#plugin__farmsync');
 
+    var resolveConflict = function($elem) {
+        $elem.closest('div.li').find('table.diff').hide();
+
+        var $conflicts = $elem.closest('div.result').find('h2 span');
+        $conflicts.html(Number($conflicts.html()) - 1);
+        if (Number($conflicts.html()) === 0) $elem.closest('div.result').switchClass('withconflicts','noconflicts');
+        $elem.html('<span>'+ LANG.plugins.farmsync['done'] +'</span>');
+    };
+
     $farmsync.find('div.progress').slideUp();
     $farmsync.find('span.progress').click(function() {
         $farmsync.find('div.progress').slideToggle();
@@ -63,11 +72,7 @@ jQuery(function(){
         var $this = jQuery(this);
         var animal = $this.parent('form').data('animal');
         var page = $this.parent('form').data('page');
-        var $conflicts = $this.closest('div.result').find('h2 span');
-        $conflicts.html(Number($conflicts.html()) - 1);
-        if (Number($conflicts.html()) === 0) $this.closest('div.result').switchClass('withconflicts','noconflicts');
-        $this.replaceWith('<span>'+ LANG.plugins.farmsync['done'] +'</span>');
-        jQuery('form[data-animal="' + animal + '"][data-page="' + page + '"] button').hide();
+        resolveConflict($this.parent('form'));
     });
     $farmsync.find('form button[name=override]').click(function(event) {
         event.stopPropagation();
@@ -90,10 +95,7 @@ jQuery(function(){
                 'sectok': sectok
             }
         ).done(function (data, textStatus, jqXHR) {
-            var $conflicts = $this.closest('div.result').find('h2 span');
-            $conflicts.html(Number($conflicts.html()) - 1);
-            if (Number($conflicts.html()) === 0) $this.closest('div.result').switchClass('withconflicts','noconflicts');
-            $this.replaceWith('<span>'+ LANG.plugins.farmsync['done'] +'</span>');
+            resolveConflict($this.parent('form'));
         }).fail(function (jqXHR, textStatus, errorThrown) {
             $this.replaceWith('<span>Failure! ' + textStatus + ' ' + errorThrown + '</span>');
             console.dir(jqXHR);
@@ -179,10 +181,7 @@ jQuery(function(){
                 'sectok': sectok
             }
         ).done(function (data, textStatus, jqXHR) {
-            var $conflicts = $form.closest('div.result').find('h2 span');
-            $conflicts.html(Number($conflicts.html()) - 1);
-            if (Number($conflicts.html()) === 0) $form.closest('div.result').switchClass('withconflicts','noconflicts');
-            $form.replaceWith('<span>'+ LANG.plugins.farmsync['done'] +'</span>');
+            resolveConflict($form);
         }).fail(function (jqXHR, textStatus, errorThrown) {
             $form.replaceWith('<span>Failure! ' + textStatus + ' ' + errorThrown + '</span>');
             console.dir(jqXHR);
