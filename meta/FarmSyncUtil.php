@@ -16,11 +16,19 @@ class FarmSyncUtil {
     /** @var  \helper_plugin_farmer */
     protected $farmer;
 
+    private $originalConfDirs;
+
     /**
      * FarmSyncUtil constructor.
      */
     function __construct() {
         $this->farmer = plugin_load('helper', 'farmer');
+    }
+
+    function __destruct() {
+        if (!empty($this->originalConfDirs)) {
+            throw new \Exception('Animal context has not been reset!');
+        }
     }
 
     /**
@@ -55,6 +63,38 @@ class FarmSyncUtil {
         touch($animalDir.'conf/local.php');
     }
 
+    private function setAnimalContext($animal) {
+        if (!empty($this->originalConfDirs)) {
+            throw new \Exception('Animal context has not been reset!');
+        }
+        global $conf;
+        $this->originalConfDirs = array();
+        $animaldir = $this->getAnimalDataDir($animal);
+        $this->originalConfDirs['mediaolddir'] = $conf['mediaolddir'];
+        $this->originalConfDirs['mediadir'] = $conf['mediadir'];
+        $this->originalConfDirs['datadir'] = $conf['datadir'];
+        $this->originalConfDirs['olddir'] = $conf['olddir'];
+        $this->originalConfDirs['metadir'] = $conf['metadir'];
+        $conf['mediaolddir'] = $animaldir . 'media_attic';
+        $conf['mediadir'] = $animaldir . 'media';
+        $conf['datadir'] = $animaldir . 'pages';
+        $conf['olddir'] = $animaldir . 'attic';
+        $conf['metadir'] = $animaldir . 'meta';
+    }
+
+    private function resetContext() {
+        global $conf;
+        if (empty($this->originalConfDirs)) {
+            throw new \Exception('No animal context set!');
+        }
+        $conf['mediaolddir'] = $this->originalConfDirs['mediaolddir'];
+        $conf['mediadir'] = $this->originalConfDirs['mediadir'];
+        $conf['datadir'] = $this->originalConfDirs['datadir'];
+        $conf['olddir'] = $this->originalConfDirs['olddir'];
+        $conf['metadir'] = $this->originalConfDirs['metadir'];
+        unset($this->originalConfDirs);
+    }
+
     /**
      * Saves a file with the given content and set its latmodified date if given
      *
@@ -77,6 +117,7 @@ class FarmSyncUtil {
      */
     public function saveRemotePage($animal, $page, $content, $timestamp = 0) {
         global $INPUT, $conf;
+        $this->checkForExternalEdit($animal, $page);
         if (!$timestamp) $timestamp = time();
         $changelogLine = join("\t", array($timestamp, clientIP(true), DOKU_CHANGE_TYPE_EDIT, $page, $INPUT->server->str('REMOTE_USER'), "Page updated from $conf[title] (" . DOKU_URL . ")"));
         $this->addRemotePageChangelogRevision($animal, $page, $changelogLine);
@@ -95,7 +136,7 @@ class FarmSyncUtil {
     public function saveRemoteMedia($source, $target, $media) {
         global $INPUT, $conf;
         $timestamp = $this->getRemoteFilemtime($source, $media, true);
-        $changelogLine = join("\t", array($timestamp, clientIP(true), DOKU_CHANGE_TYPE_EDIT, $media, $INPUT->server->str('REMOTE_USER'), "Page updated from $conf[title] (" . DOKU_URL . ")"));
+        $changelogLine = join("\t", array($timestamp, clientIP(true), DOKU_CHANGE_TYPE_EDIT, $media, $INPUT->server->str('REMOTE_USER'), "Media updated from $conf[title] (" . DOKU_URL . ")"));
         $this->addRemoteMediaChangelogRevision($target, $media, $changelogLine);
         $sourceContent = $this->readRemoteMedia($source, $media);
         $this->replaceRemoteFile($this->getRemoteMediaFilename($target, $media), $sourceContent, $timestamp);
@@ -160,20 +201,15 @@ class FarmSyncUtil {
      * @return string The path to the page at the animal
      */
     public function getRemoteFilename($animal, $document, $timestamp = null, $clean = true) {
-        global $conf, $cache_wikifn;
-        $remoteDataDir = $this->getAnimalDataDir($animal);
+        global $cache_wikifn;
 
-        $source_datadir = $conf['datadir'];
-        $conf['datadir'] = $remoteDataDir . 'pages';
-        $source_olddir = $conf['olddir'];
-        $conf['olddir'] = $remoteDataDir . 'attic';
+        $this->setAnimalContext($animal);
 
         unset($cache_wikifn[str_replace(':', '/', $clean ? cleanID($document) : $document)]);
         $FN = wikiFN($document, $timestamp, $clean);
         unset($cache_wikifn[str_replace(':', '/', $clean ? cleanID($document) : $document)]);
 
-        $conf['datadir'] = $source_datadir;
-        $conf['olddir'] = $source_olddir;
+        $this->resetContext();
 
         return $FN;
     }
@@ -367,49 +403,45 @@ class FarmSyncUtil {
         return $schemas;
     }
 
-    public function getAnimalStructAssignments($source, $schemas) {
+    public function getAnimalStructAssignments($sourceAnimal, $schemas) {
         /** @var \helper_plugin_struct_imexport $struct */
         $struct = plugin_load('helper', 'struct_imexport');
-        global $conf;
 
-        $remoteDataDir = $this->getAnimalDataDir($source);
-        $farmer_metadir = $conf['metadir'];
-        $conf['metadir'] = $remoteDataDir . 'meta';
+        $this->setAnimalContext($sourceAnimal);
+
         foreach ($schemas as $key => $assignment) {
             $schemas[$assignment] = $struct->getSchemaAssignmentPatterns($assignment);
             unset($schemas[$key]);
         }
-        $conf['metadir'] = $farmer_metadir;
+
+        $this->resetContext();
+
         return $schemas;
 
     }
 
     /**
-     * @param string $target      target-animal
+     * @param string $targetAnimal      target-animal
      * @param array  $assignments
      */
-    public function replaceAnimalStructAssignments($target, $assignments) {
+    public function replaceAnimalStructAssignments($targetAnimal, $assignments) {
         /** @var \helper_plugin_struct_imexport $struct */
         $struct = plugin_load('helper', 'struct_imexport');
-        global $conf;
 
-        $remoteDataDir = $this->getAnimalDataDir($target);
-        $farmer_metadir = $conf['metadir'];
-        $conf['metadir'] = $remoteDataDir . 'meta';
+        $this->setAnimalContext($targetAnimal);
+
         foreach ($assignments as $schema => $patterns) {
             $struct->replaceSchemaAssignmentPatterns($schema, $patterns);
         }
-        $conf['metadir'] = $farmer_metadir;
+
+        $this->resetContext();
     }
 
-    public function getAnimalStructSchemasJSON($source, $schemas) {
+    public function getAnimalStructSchemasJSON($sourceAnimal, $schemas) {
         /** @var \helper_plugin_struct_imexport $struct */
         $struct = plugin_load('helper', 'struct_imexport');
-        global $conf;
 
-        $remoteDataDir = $this->getAnimalDataDir($source);
-        $farmer_metadir = $conf['metadir'];
-        $conf['metadir'] = $remoteDataDir . 'meta';
+        $this->setAnimalContext($sourceAnimal);
         foreach ($schemas as $key => $schema) {
             $schemas[$schema] = json_decode($struct->getCurrentSchemaJSON($schema));
             $schemas[$schema]->user = 'FARMSYNC';
@@ -417,34 +449,26 @@ class FarmSyncUtil {
             $schemas[$schema] = json_encode($schemas[$schema]);
             unset($schemas[$key]);
         }
-        $conf['metadir'] = $farmer_metadir;
+
+        $this->resetContext();
         return $schemas;
     }
 
-    public function importAnimalStructSchema($target, $schemaName, $json) {
+    public function importAnimalStructSchema($targetAnimal, $schemaName, $json) {
         /** @var \helper_plugin_struct_imexport $struct */
         $struct = plugin_load('helper', 'struct_imexport');
-        global $conf;
 
-        $remoteDataDir = $this->getAnimalDataDir($target);
-        $farmer_metadir = $conf['metadir'];
-        $conf['metadir'] = $remoteDataDir . 'meta';
+        $this->setAnimalContext($targetAnimal);
 
         $struct->importSchema($schemaName, $json, 'FARMSYNC');
 
-        $conf['metadir'] = $farmer_metadir;
+        $this->resetContext();
     }
 
-    public function updateAnimalStructSchema($target, $schemaName, $json) {
-        global $conf;
-
-        $remoteDataDir = $this->getAnimalDataDir($target);
-        $farmer_metadir = $conf['metadir'];
-        $conf['metadir'] = $remoteDataDir . 'meta';
-
-        $result = $this->_updateAnimalStructSchema($target, $schemaName, $json);
-
-        $conf['metadir'] = $farmer_metadir;
+    public function updateAnimalStructSchema($targetAnimal, $schemaName, $json) {
+        $this->setAnimalContext($targetAnimal);
+        $result = $this->_updateAnimalStructSchema($targetAnimal, $schemaName, $json);
+        $this->resetContext();
         return $result;
     }
 
@@ -472,6 +496,12 @@ class FarmSyncUtil {
         $result = new StructConflict($schemaName, $target);
         $result->setMergeResult('merged with conflicts');
         return $result;
+    }
+
+    private function checkForExternalEdit($animal, $page) {
+        $this->setAnimalContext($animal);
+        detectExternalEdit($page);
+        $this->resetContext();
     }
 
 }
