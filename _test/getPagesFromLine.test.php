@@ -1,6 +1,9 @@
 <?php
 
 namespace dokuwiki\plugin\farmsync\test;
+use dokuwiki\plugin\farmsync\meta\MediaUpdates;
+use dokuwiki\plugin\farmsync\meta\PageUpdates;
+use dokuwiki\plugin\farmsync\meta\TemplateUpdates;
 
 /**
  * @group plugin_farmsync
@@ -47,270 +50,187 @@ class getPagesFromLine_farmsync_test extends \DokuWikiTest {
     }
 
 
-    public function test_getPagesFromLine_singleExistingPage() {
-        // arrange
-        /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin', 'farmsync');
 
+    /**
+     * @dataProvider test_getPagesFromLine_dataProvider
+     */
+    public function test_getPagesFromLine_param($pattern, $expectedResult, $expectedMsgCount, $failureMsg) {
+        // arrange
         $mock_farm_util = new mock\FarmSyncUtil();
         $sourceanimal = 'sourceanimal';
         $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
-        $admin->farm_util = $mock_farm_util;
+        $pageUpdater = new PageUpdates($sourceanimal, array(), array());
+        $pageUpdater->farm_util = $mock_farm_util;
 
         // act
-        $actual_result = $admin->getDocumentsFromLine($sourceanimal, 'test:page');
-
-        // assert
-        $this->assertEquals(array('test:page'), $actual_result);
-    }
-
-    public function test_getPagesFromLine_oneLevelNS() {
-        // arrange
-        /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin', 'farmsync');
-        $mock_farm_util = new mock\FarmSyncUtil();
-        $sourceanimal = 'sourceanimal';
-        $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
-        $admin->farm_util = $mock_farm_util;
-
-        // act
-        $actual_result = $admin->getDocumentsFromLine($sourceanimal, 'test:*');
-
-        // assert
-        $this->assertEquals(array('test:page', 'test:page2'), $actual_result);
-    }
-
-    public function test_getPagesFromLine_oneLevelNS_base() {
-        // arrange
-        /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin', 'farmsync');
-        $mock_farm_util = new mock\FarmSyncUtil();
-        $sourceanimal = 'sourceanimal';
-        $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
-        $admin->farm_util = $mock_farm_util;
-
-        // act
-        $actual_result = $admin->getDocumentsFromLine($sourceanimal, ':*');
-
-        // assert
-        $this->assertEquals(array(':base'), $actual_result);
-    }
-
-    public function test_getPagesFromLine_pageMissing() {
-        // arrange
-        /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin', 'farmsync');
-        $mock_farm_util = new mock\FarmSyncUtil();
-        $sourceanimal = 'sourceanimal';
-        $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
-        $admin->farm_util = $mock_farm_util;
-
-        // act
-        $actual_result = $admin->getDocumentsFromLine($sourceanimal, 'foo');
+        $actual_result = $pageUpdater->getDocumentsFromLine($sourceanimal, $pattern);
 
         // assert
         global $MSG;
-        $this->assertEquals(array(), $actual_result);
-        $this->assertEquals(count($MSG), 1);
+        $this->assertEquals($expectedResult, $actual_result, $failureMsg);
+        $this->assertEquals(count($MSG), $expectedMsgCount);
     }
 
-    public function test_getPagesFromLine_startPage() {
+    public function test_getPagesFromLine_dataProvider() {
+        return array(
+            array(
+                'test:page',
+                array('test:page'),
+                0,
+                'singleExistingPage'
+            ),
+            array(
+                'test:*',
+                array('test:page', 'test:page2'),
+                0,
+                'oneLevelNS'
+            ),
+            array(
+                ':*',
+                array(':base'),
+                0,
+                'oneLevelNS_base'
+            ),
+            array(
+                'foo',
+                array(),
+                1,
+                'pageMissing'
+            ),
+            array(
+                'start:all:',
+                array('start:all:start'),
+                0,
+                'startPage'
+            ),
+            array(
+                'start:nostart:',
+                array('start:nostart:nostart'),
+                0,
+                'startPage_inNSlikeNS'
+            ),
+            array(
+                'start:outeronly:',
+                array('start:outeronly'),
+                0,
+                'startPage_likeNS'
+            ),
+            array(
+                'wiki:',
+                array(),
+                1,
+                'startPage_missing'
+            ),
+            array(
+                'wiki:_template',
+                array(),
+                0,
+                'template_as_page'
+            )
+        );
+    }
+
+    /**
+     * @dataProvider test_getTemplatesFromLine_dataProvider
+     */
+    public function test_getTemplatesFromLine_param($pattern, $expectedResult, $expectedMsgCount, $failureMsg) {
         // arrange
-        /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin', 'farmsync');
         $mock_farm_util = new mock\FarmSyncUtil();
         $sourceanimal = 'sourceanimal';
         $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
-        $admin->farm_util = $mock_farm_util;
+        $templateUpdater = new TemplateUpdates($sourceanimal, array(), array());
+        $templateUpdater->farm_util = $mock_farm_util;
 
         // act
-        $actual_result = $admin->getDocumentsFromLine($sourceanimal, 'start:all:');
+        $actual_result = $templateUpdater->getDocumentsFromLine($sourceanimal, $pattern);
 
         // assert
         global $MSG;
-        $this->assertEquals(array('start:all:start'), $actual_result);
-        $this->assertEquals(count($MSG), 0);
+        $this->assertEquals($expectedResult, $actual_result, $failureMsg);
+        $this->assertEquals(count($MSG), $expectedMsgCount);
     }
 
-    public function test_getPagesFromLine_startPage_inNSlikeNS() {
+    public function test_getTemplatesFromLine_dataProvider() {
+        return array(
+            array(
+                'wiki:_template',
+                array(),
+                1,
+                'template_missing'
+            ),
+            array(
+                'page:_template',
+                array(),
+                1,
+                'template_existing_as_page'
+            ),
+            array(
+                'namespace:_template',
+                array('namespace:_template'),
+                0,
+                'template_existing'
+            ),
+            array(
+                'namespace:*',
+                array('namespace:_template'),
+                0,
+                'template_ns'
+            ),
+            array(
+                ':**',
+                array(':namespace:_template'),
+                0,
+                'template_ns_deep'
+            )
+        );
+    }
+
+    /**
+     * @dataProvider test_getMediaFromLine_dataProvider
+     */
+    public function test_getMediaFromLine_param($pattern, $expectedResult, $expectedMsgCount, $failureMsg) {
         // arrange
-        /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin', 'farmsync');
         $mock_farm_util = new mock\FarmSyncUtil();
         $sourceanimal = 'sourceanimal';
         $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
-        $admin->farm_util = $mock_farm_util;
+        $mediaUpdater = new MediaUpdates($sourceanimal, array(), array());
+        $mediaUpdater->farm_util = $mock_farm_util;
 
         // act
-        $actual_result = $admin->getDocumentsFromLine($sourceanimal, 'start:nostart:');
+        $actual_result = $mediaUpdater->getDocumentsFromLine($sourceanimal, $pattern);
 
         // assert
         global $MSG;
-        $this->assertEquals(array('start:nostart:nostart'), $actual_result);
-        $this->assertEquals(count($MSG), 0);
+        $this->assertEquals($expectedResult, $actual_result, $failureMsg);
+        $this->assertEquals(count($MSG), $expectedMsgCount);
     }
 
-    public function test_getPagesFromLine_startPage_likeNS() {
-        // arrange
-        /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin', 'farmsync');
-        $mock_farm_util = new mock\FarmSyncUtil();
-        $sourceanimal = 'sourceanimal';
-        $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
-        $admin->farm_util = $mock_farm_util;
-
-        // act
-        $actual_result = $admin->getDocumentsFromLine($sourceanimal, 'start:outeronly:');
-
-        // assert
-        global $MSG;
-        $this->assertEquals(array('start:outeronly'), $actual_result);
-        $this->assertEquals(count($MSG), 0);
-    }
-
-    public function test_getPagesFromLine_startPage_missing() {
-        // arrange
-        /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin', 'farmsync');
-        $mock_farm_util = new mock\FarmSyncUtil();
-        $sourceanimal = 'sourceanimal';
-        $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
-        $admin->farm_util = $mock_farm_util;
-
-        // act
-        $actual_result = $admin->getDocumentsFromLine($sourceanimal, 'wiki:');
-
-        // assert
-        global $MSG;
-        $this->assertEquals(array(), $actual_result);
-        $this->assertEquals(count($MSG), 1);
-    }
-
-    public function test_getPagesFromLine_template_as_page() {
-        // arrange
-        /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin', 'farmsync');
-        $mock_farm_util = new mock\FarmSyncUtil();
-        $sourceanimal = 'sourceanimal';
-        $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
-        $admin->farm_util = $mock_farm_util;
-
-        // act
-        $actual_result = $admin->getDocumentsFromLine($sourceanimal, 'wiki:_template');
-
-        // assert
-        global $MSG;
-        $this->assertEquals(array(), $actual_result);
-        $this->assertEquals(0, count($MSG));
-    }
-
-    public function test_getPagesFromLine_template_missing() {
-        // arrange
-        /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin', 'farmsync');
-        $mock_farm_util = new mock\FarmSyncUtil();
-        $sourceanimal = 'sourceanimal';
-        $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
-        $admin->farm_util = $mock_farm_util;
-
-        // act
-        $actual_result = $admin->getDocumentsFromLine($sourceanimal, 'wiki:_template', 'template');
-
-        // assert
-        global $MSG;
-        $this->assertEquals(array(), $actual_result);
-        $this->assertEquals(1, count($MSG));
-    }
-
-    public function test_getPagesFromLine_template_existing_as_page() {
-        // arrange
-        /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin', 'farmsync');
-        $mock_farm_util = new mock\FarmSyncUtil();
-        $sourceanimal = 'sourceanimal';
-        $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
-        $admin->farm_util = $mock_farm_util;
-
-        // act
-        $actual_result = $admin->getDocumentsFromLine('page:_template', 'template');
-
-        // assert
-        global $MSG;
-        $this->assertEquals(array(), $actual_result);
-        $this->assertEquals(1, count($MSG));
-    }
-
-    public function test_getPagesFromLine_template_existing() {
-        // arrange
-        /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin', 'farmsync');
-        $mock_farm_util = new mock\FarmSyncUtil();
-        $sourceanimal = 'sourceanimal';
-        $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
-        $admin->farm_util = $mock_farm_util;
-
-
-        // act
-        $actual_result = $admin->getDocumentsFromLine($sourceanimal, 'namespace:_template', 'template');
-
-        // assert
-        global $MSG;
-        $this->assertEquals(array('namespace:_template'), $actual_result);
-        $this->assertEquals(0, count($MSG));
-    }
-
-    public function test_getPagesFromLine_template_ns() {
-        // arrange
-        /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin', 'farmsync');
-        $mock_farm_util = new mock\FarmSyncUtil();
-        $sourceanimal = 'sourceanimal';
-        $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
-        $admin->farm_util = $mock_farm_util;
-
-        // act
-        $actual_result = $admin->getDocumentsFromLine($sourceanimal, 'namespace:*', 'template');
-
-        // assert
-        global $MSG;
-        $this->assertEquals(array('namespace:_template'), $actual_result);
-        $this->assertEquals(0, count($MSG));
-    }
-
-    public function test_getPagesFromLine_template_ns_deep() {
-        // arrange
-        /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin', 'farmsync');
-        $mock_farm_util = new mock\FarmSyncUtil();
-        $sourceanimal = 'sourceanimal';
-        $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
-        $admin->farm_util = $mock_farm_util;
-
-
-        // act
-        $actual_result = $admin->getDocumentsFromLine($sourceanimal, ':**', 'template');
-
-        // assert
-        global $MSG;
-        $this->assertEquals(array(':namespace:_template'), $actual_result);
-        $this->assertEquals(0, count($MSG));
-    }
-
-    public function test_getPagesFromLine_media_ns() {
-        // arrange
-        /** @var \admin_plugin_farmsync $admin */
-        $admin = plugin_load('admin', 'farmsync');
-        $mock_farm_util = new mock\FarmSyncUtil();
-        $sourceanimal = 'sourceanimal';
-        $mock_farm_util->setAnimalDataDir($sourceanimal, substr(DOKU_TMP_DATA, 0, -1) . '_sourceGetPagesFromLine/');
-        $admin->farm_util = $mock_farm_util;
-
-        // act
-        $actual_result = $admin->getDocumentsFromLine($sourceanimal, 'wiki:*', 'media');
-
-        // assert
-        global $MSG;
-        $this->assertEquals(array('wiki:dokuwiki-128.png'), $actual_result);
-        $this->assertEquals(0, count($MSG));
+    public function test_getMediaFromLine_dataProvider() {
+        return array(
+            array(
+                'wiki:*',
+                array('wiki:dokuwiki-128.png'),
+                0,
+                'media_ns'
+            ),
+            array(
+                'wiki:dokuwiki-128.png',
+                array('wiki:dokuwiki-128.png'),
+                0,
+                'media specific file'
+            ),
+            array(
+                ':**',
+                array(':wiki:dokuwiki-128.png'),
+                0,
+                'media deep ns file'
+            ),
+            array(
+                'wiki:missing.png',
+                array(),
+                1,
+                'media missing file'
+            ),
+        );
     }
 }

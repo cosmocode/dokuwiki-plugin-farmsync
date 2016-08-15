@@ -15,6 +15,14 @@ use dokuwiki\Form\Form;
  */
 class MediaConflict extends UpdateResults {
 
+    protected $source;
+
+    public function __construct($item, $target, $source) {
+        $this->source = $source;
+        parent::__construct($item, $target);
+    }
+
+
     /**
      * Adds conflict resolution form
      *
@@ -25,8 +33,9 @@ class MediaConflict extends UpdateResults {
         $form = new Form();
         $form->attrs(array('data-animal' => $this->getAnimal(), "data-page" => $this->getItem(), "data-type" => 'media'));
 
+        $sourcebase = $this->_farm_util->getAnimalLink($this->source);
         $sourcelink = $form->addTagOpen('a');
-        $sourcelink->attr('href', DOKU_BASE . "lib/exe/fetch.php?media=" . $this->getItem())->attr('target', '_blank');
+        $sourcelink->attr('href', "$sourcebase/lib/exe/fetch.php?media=" . $this->getItem())->attr('target', '_blank');
         $form->addHTML($this->helper->getLang('link:srcversion'));
         $form->addTagClose('a');
 
