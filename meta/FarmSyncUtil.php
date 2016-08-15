@@ -476,13 +476,14 @@ class FarmSyncUtil {
         /** @var \helper_plugin_struct_imexport $struct */
         $struct = plugin_load('helper', 'struct_imexport');
         $result = new UpdateResults($schemaName, $target);
-        $targetSchema = json_decode($struct->getCurrentSchemaJSON($schemaName));
+        $targetJSON = $struct->getCurrentSchemaJSON($schemaName);
 
-        if ($targetSchema->id == 0) {
+        if ($targetJSON == false) {
             $struct->importSchema($schemaName, $json, 'FARMSYNC');
             $result->setMergeResult('new file');
             return $result;
         }
+        $targetSchema = json_decode($targetJSON);
         if ($targetSchema->user == 'FARMSYNC') {
             $targetSchema->id = 0;
             if (json_encode($targetSchema) == $json) {
