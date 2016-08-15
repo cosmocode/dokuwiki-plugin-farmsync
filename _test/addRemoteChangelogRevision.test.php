@@ -38,7 +38,7 @@ class addRemoteChangelogRevision_farmsync_test extends \DokuWikiTest {
         $actual_file = io_readFile($fn);
 
         // assert
-        $this->assertEquals($original_file . "\n" . $testline, $actual_file);
+        $this->assertEquals($original_file . "\n" . $testline . "\n", $actual_file);
         $this->assertEquals(array(), $result);
     }
 
@@ -61,7 +61,7 @@ $testline
 1422353857	127.0.0.1	E	unittests	user2	[Links] 	
 1426689052	127.0.0.1	C	de:unittests	user3	↷ Page moved from unittests to en:unittests	
 1426689152	127.0.0.1	C	unittests	user2	↷ Page moved from en:unittests to unittests	
-1427888702	127.0.0.1	E	unittests	user1	[Links] 	";
+1427888702	127.0.0.1	E	unittests	user1	[Links] 	\n";
         $this->assertEquals($expected_file, $actual_file);
         $this->assertEquals(array(), $result);
     }
@@ -80,7 +80,7 @@ $testline
 
         // assert
         $expected_file = "1422353621	127.0.0.1	C	unittests	user0	created	
-$testline";
+$testline\n";
         $this->assertEquals($expected_file, $actual_file);
         $this->assertEquals(array(), $result);
     }
@@ -104,7 +104,7 @@ $testline
 1422353857	127.0.0.1	E	unittests	user2	[Links] 	
 1426689052	127.0.0.1	C	de:unittests	user3	↷ Page moved from unittests to en:unittests	
 1426689152	127.0.0.1	C	unittests	user2	↷ Page moved from en:unittests to unittests	
-1427888702	127.0.0.1	E	unittests	user1	[Links] 	";
+1427888702	127.0.0.1	E	unittests	user1	[Links] 	\n";
         $this->assertEquals($expected_file, $actual_file);
         $this->assertEquals(array(1422353856), $result);
     }
@@ -128,7 +128,7 @@ $testline
 $testline
 1426689052	127.0.0.1	C	de:unittests	user3	↷ Page moved from unittests to en:unittests	
 1426689152	127.0.0.1	C	unittests	user2	↷ Page moved from en:unittests to unittests	
-1427888702	127.0.0.1	E	unittests	user1	[Links] 	";
+1427888702	127.0.0.1	E	unittests	user1	[Links] 	\n";
         $this->assertEquals($expected_file, $actual_file);
         $this->assertEquals(array(1422353856, 1422353857), $result);
     }
