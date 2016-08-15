@@ -337,7 +337,7 @@ class FarmSyncUtil {
         }
         array_splice($lines, $lineindex, $truncate ? count($lines) : 0, $changelogLine);
 
-        $this->replaceRemoteFile($remoteChangelog, join("\n", $lines));
+        $this->replaceRemoteFile($remoteChangelog, join("\n", $lines) . "\n");
         return $revisionsToAdjust;
     }
 
